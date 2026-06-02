@@ -9,7 +9,9 @@ import { defaultSettings } from "../shared/events.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const isDev = Boolean(process.env.VITE_DEV_SERVER_URL);
-const iconPath = join(__dirname, "../../build/icon.ico");
+const iconPath = isDev
+  ? join(__dirname, "../../build/icon.ico")
+  : join(process.resourcesPath, "build/icon.ico");
 const appDataDir = join(app.getPath("userData"), "clawd-companion");
 const settingsPath = join(appDataDir, "settings.json");
 const logPath = join(appDataDir, "runtime.log");
