@@ -187,21 +187,7 @@ function PetApp() {
           updateSettings({ thoughtScale: ns, cardScale: ns });
         } else if (zoneKey === "ribbon") {
           updateSettings({ bubbleScale: Math.max(0.6, Math.min(2, ox + (e.clientX - mx) / 144)) });
-        } else if (zoneKey === "viewN") {
-          updateSettings({ zoneViewH: Math.max(300, Math.min(900, oy - (e.clientY - my))) });
-        } else if (zoneKey === "viewS") {
-          updateSettings({ zoneViewH: Math.max(300, Math.min(900, oy + (e.clientY - my))) });
-        } else if (zoneKey === "viewE") {
-          updateSettings({ zoneViewW: Math.max(260, Math.min(800, ox + (e.clientX - mx))) });
-        } else if (zoneKey === "viewW") {
-          updateSettings({ zoneViewW: Math.max(260, Math.min(800, ox - (e.clientX - mx))) });
         }
-      } else if (key === "view") {
-        // view 区域拖动平移
-        const nx = ox + e.clientX - mx;
-        const ny = oy + e.clientY - my;
-        const p = offsetsRef.current;
-        updateSettings({ positionOffsets: { ...p, view: { x: nx, y: ny } } });
       } else {
         const nx = ox + e.clientX - mx;
         const ny = oy + e.clientY - my;
@@ -233,17 +219,8 @@ function PetApp() {
     if (!editMode) return;
     e.stopPropagation();
     dragging.current = `resize-${k}`;
-    if (k === "viewN" || k === "viewS" || k === "viewE" || k === "viewW") {
-      const vw = settings.zoneViewW ?? 320;
-      const vh = settings.zoneViewH ?? 520;
-      if (k === "viewN") dragStart.current = { mx: e.clientY, my: 0, ox: vh, oy: 0 };
-      else if (k === "viewS") dragStart.current = { mx: e.clientY, my: 0, ox: vh, oy: 0 };
-      else if (k === "viewE") dragStart.current = { mx: e.clientX, my: 0, ox: vw, oy: 0 };
-      else dragStart.current = { mx: e.clientX, my: 0, ox: vw, oy: 0 };
-    } else {
-      const s = scaleRef.current;
-      dragStart.current = { mx: e.clientX, my: e.clientY, ox: s[k as keyof typeof s] ?? 1, oy: s[k as keyof typeof s] ?? 1 };
-    }
+    const s = scaleRef.current;
+    dragStart.current = { mx: e.clientX, my: e.clientY, ox: s[k as keyof typeof s] ?? 1, oy: s[k as keyof typeof s] ?? 1 };
   }
 
   if (editMode) {
@@ -254,22 +231,7 @@ function PetApp() {
     const rh = Math.round(144 * settings.bubbleScale);
 
     return (
-      <main className="pet-stage edit-mode" style={{
-        "--view-width": `${settings.zoneViewW ?? 320}px`,
-        "--view-height": `${settings.zoneViewH ?? 520}px`,
-        background: "rgba(215, 119, 87, 0.06)"
-      } as React.CSSProperties}>
-        <div className="view-frame"
-          style={{
-            width: "var(--view-width)", height: "var(--view-height)",
-            transform: `translate(${offsets.view?.x ?? 0}px, ${offsets.view?.y ?? 0}px)`
-          }}
-          onMouseDown={e => begin("view", e)}>
-          <span className="view-resize n" onMouseDown={e => beginResize("viewN", e)} />
-          <span className="view-resize s" onMouseDown={e => beginResize("viewS", e)} />
-          <span className="view-resize e" onMouseDown={e => beginResize("viewE", e)} />
-          <span className="view-resize w" onMouseDown={e => beginResize("viewW", e)} />
-        </div>
+      <main className="pet-stage edit-mode" style={{ background: "rgba(215, 119, 87, 0.06)" }}>
         <section className="pet-anchor" style={{ transform: `translateX(-50%) scale(${settings.petScale})` }}>
           {/* Zone 1: Clawd */}
           <div className="edit-zone edit-zone-clawd"

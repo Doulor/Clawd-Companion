@@ -73,27 +73,6 @@ button { border: 0; cursor: pointer; }
 .edit-zone-clawd { left: 0; bottom: 0; width: 226px; height: 238px; z-index: 4; }
 .edit-zone-bubble { left: -6px; top: 0; right: -6px; bottom: 242px; z-index: 2; }
 .edit-zone-ribbon { left: -44px; bottom: 22px; width: 144px; height: 144px; z-index: 3; }
-.view-frame {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  border: 1px solid rgba(215, 119, 87, 0.25);
-  border-radius: 4px;
-  background: rgba(215, 119, 87, 0.05);
-  cursor: move;
-  z-index: 0;
-  pointer-events: auto;
-}
-.view-resize {
-  position: absolute;
-  z-index: 11;
-  pointer-events: auto;
-}
-.view-resize.n { left: 0; right: 0; top: -4px; height: 8px; cursor: n-resize; }
-.view-resize.s { left: 0; right: 0; bottom: -4px; height: 8px; cursor: s-resize; }
-.view-resize.e { top: 0; bottom: 0; right: -4px; width: 8px; cursor: e-resize; }
-.view-resize.w { top: 0; bottom: 0; left: -4px; width: 8px; cursor: w-resize; }
 
 .zone-resize {
   position: absolute;
