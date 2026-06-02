@@ -41,7 +41,7 @@ button { border: 0; cursor: pointer; }
   pointer-events: auto;
   background: transparent;
 }
-.pet-disabled { display: none; }
+.pet-disabled { visibility: hidden; }
 .edit-drag { cursor: default; transition: opacity 150ms ease; }
 .edit-drag.dragging { opacity: .88; }
 .pet-stage.edit-mode .pet-anchor { -webkit-app-region: no-drag; }
