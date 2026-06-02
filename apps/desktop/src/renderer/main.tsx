@@ -408,10 +408,9 @@ function SettingsApp() {
             想摆脱命令行窗口，请双击项目根目录的 <code>静默启动Clawd.vbs</code>。退出应用请用托盘菜单。
             <button className="inline-action" onClick={() => copy(launchPath, "launch")}>{copied === "launch" ? "已复制路径" : "复制静默启动路径"}</button>
           </div>
-        </Panel>
-
-        <Panel title="工具显示方式" icon={<Wrench size={18} />}>
-          <p className="note" style={{ marginTop: 0, marginBottom: 12 }}>为每种工具单独设置显示方式。优先级高于上方的状态显示设置。设为"跟随状态"则使用上方的默认设置。</p>
+          <div className="panel-divider" />
+          <h3 className="panel-subtitle">工具显示方式</h3>
+          <p className="note" style={{ marginTop: 0, marginBottom: 10 }}>为每种工具单独设置显示方式。设为"跟随"则使用上方的状态默认设置。</p>
           {toolFeedbackRows.map(row => (
             <div key={row.tool} className="feedback-mode-row">
               <span>{row.label}</span>

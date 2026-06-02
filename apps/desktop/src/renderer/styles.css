@@ -487,6 +487,8 @@ h1 { max-width: 760px; margin: 0; font-size: clamp(32px, 4.2vw, 54px); line-heig
 .panel.wide { grid-column: 1 / -1; }
 .panel header { display: flex; align-items: center; gap: 9px; margin-bottom: 16px; color: var(--steel); }
 .panel h2 { margin: 0; color: var(--ink); font-size: 20px; letter-spacing: 0; }
+.panel-divider { height: 1px; margin: 18px 0; background: var(--line); }
+.panel-subtitle { margin: 0 0 4px; color: var(--ink); font-size: 15px; font-weight: 800; }
 .connect-layout { display: grid; grid-template-columns: minmax(260px, 0.8fr) minmax(360px, 1.2fr); gap: 16px; }
 .steps { display: grid; gap: 11px; }
 .step { display: grid; grid-template-columns: 34px 1fr; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: rgba(255, 255, 255, 0.44); }
