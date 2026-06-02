@@ -73,7 +73,10 @@ function clientFromPayload(payload: HookPayload): { clientType: ClientType; clie
 function toolName(payload: HookPayload): ToolName {
   const input = asObject(payload.tool_input);
   const raw = text(payload.tool_name) ?? text(payload.toolName) ?? text(input.name) ?? "Unknown";
-  if (["Read", "Edit", "Write", "Bash", "Grep", "Glob", "WebFetch", "Task"].includes(raw)) return raw as ToolName;
+  if (["Read", "Edit", "Write", "Bash", "Grep", "Glob", "WebFetch", "Task", "TaskCreate", "TaskUpdate"].includes(raw)) {
+    if (raw === "TaskCreate" || raw === "TaskUpdate") return "Task";
+    return raw as ToolName;
+  }
   return "Unknown";
 }
 

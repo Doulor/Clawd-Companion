@@ -77,6 +77,11 @@ export interface CompanionSettings {
   doneSound: boolean;
   eventHistoryLimit: number;
   position?: { x: number; y: number };
+  positionOffsets?: {
+    clawd?: { x: number; y: number };
+    bubble?: { x: number; y: number };
+    ribbon?: { x: number; y: number };
+  };
 }
 
 export interface CompanionConnectionStatus {

@@ -403,12 +403,13 @@ button { border: 0; cursor: pointer; }
 }
 .tool-ribbon {
   position: absolute;
-  left: 0;
+  left: -40px;
   bottom: 24px;
   display: flex;
   flex-direction: column;
   gap: 4px;
   z-index: 8;
+  transform-origin: bottom left;
 }
 .ribbon-row {
   display: flex;

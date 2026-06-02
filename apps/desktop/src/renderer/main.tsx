@@ -131,11 +131,14 @@ function useCompanion() {
       if (event.event !== "tool_end") {
         setCurrentEvent(event);
       }
-      if (event.event === "tool_start" || event.event === "tool_end") {
+      if (event.event === "tool_start") {
         setToolRibbon(previous => [event, ...previous].slice(0, 8));
         window.setTimeout(() => {
           setToolRibbon(previous => previous.filter(e => e.id !== event.id));
         }, 3500);
+      }
+      if (event.event === "tool_end") {
+        setToolRibbon(previous => previous.filter(e => !(e.tool === event.tool && e.event === "tool_start")));
       }
       const timeout = (event.event === "done" || event.event === "error" ? 5.2 : event.event === "tool_end" ? 2 : settings.bubbleDuration) * 1000;
       window.setTimeout(() => {
