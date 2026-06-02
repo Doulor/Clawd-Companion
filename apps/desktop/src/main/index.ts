@@ -389,7 +389,7 @@ ipcMain.handle("window:toggle-maximize-settings", () => {
 });
 ipcMain.handle("window:close-settings", () => settingsWindow?.close());
 ipcMain.handle("window:pet-interactive", (_, interactive: boolean) => {
-  petWindow?.setIgnoreMouseEvents(settings.clickThrough ? true : !interactive, { forward: true });
+  petWindow?.setIgnoreMouseEvents(!interactive, { forward: true });
 });
 ipcMain.handle("window:drag-pet", (_, position: { x: number; y: number }) => {
   const clamped = clampPetPosition(position.x, position.y);

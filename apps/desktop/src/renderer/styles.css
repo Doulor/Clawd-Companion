@@ -41,20 +41,12 @@ button { border: 0; cursor: pointer; }
   pointer-events: auto;
   background: rgba(215, 119, 87, 0.06);
 }
-.edit-hitzone { position: absolute; pointer-events: none; }
-.edit-hitzone.active { pointer-events: auto; }
-.edit-hitzone.dragging { opacity: .88; }
-.edit-hitzone.active::after {
-  content: "";
-  position: absolute;
-  inset: -4px;
-  border: 2px dashed rgba(215, 119, 87, 0.45);
-  border-radius: 8px;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 150ms ease;
-}
-.edit-hitzone.active:hover::after { opacity: 1; }
+.edit-drag { cursor: default; transition: opacity 150ms ease; }
+.edit-drag.dragging { opacity: .88; }
+.pet-stage.edit-mode .bubble-wrapper,
+.pet-stage.edit-mode .tool-ribbon,
+.pet-stage.edit-mode .clawd.drag-root { pointer-events: auto; cursor: move; }
+.pet-stage.edit-mode .clawd-image { pointer-events: none; }
 .edit-guides {
   position: absolute;
   inset: 0;

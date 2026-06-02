@@ -214,27 +214,43 @@ function PetApp() {
       >
         {settings.showBubbles && currentEvent && getFeedbackMode(currentEvent, settings) !== "ribbon" ? (
           <div
-            className={`edit-hitzone ${editMode ? "active" : ""} ${dragTarget === "bubble" ? "dragging" : ""}`}
-            style={{ position: "absolute", left: -4, top: 10, right: -4, bottom: "auto", height: 104, transform: `translate(${offsets.bubble?.x ?? 0}px, ${offsets.bubble?.y ?? 0}px)`, zIndex: editMode ? 10 : 8, pointerEvents: editMode ? "auto" : "none", cursor: editMode ? "move" : undefined }}
+            className={`bubble-wrapper edit-drag ${dragTarget === "bubble" ? "dragging" : ""}`}
+            style={{ transform: `translate(${offsets.bubble?.x ?? 0}px, ${offsets.bubble?.y ?? 0}px)` }}
             onMouseDown={e => startDrag("bubble", e)}
           >
             <Bubble event={currentEvent} state={stateFromEvent(currentEvent)} settings={settings} />
           </div>
         ) : null}
         <div
-          className={`edit-hitzone ${editMode ? "active" : ""} ${dragTarget === "clawd" ? "dragging" : ""}`}
-          style={{ position: "absolute", left: 0, bottom: 0, width: 226, height: 238, transform: `translate(${offsets.clawd?.x ?? 0}px, ${offsets.clawd?.y ?? 0}px)`, zIndex: editMode ? 10 : 4, pointerEvents: editMode ? "auto" : "none", cursor: editMode ? "move" : undefined }}
+          className={`clawd drag-root edit-drag ${dragTarget === "clawd" ? "dragging" : ""}`}
+          style={{ transform: `translate(${offsets.clawd?.x ?? 0}px, ${offsets.clawd?.y ?? 0}px) scale(${settings.clawdScale})`, opacity: settings.clawdOpacity }}
           onMouseDown={e => startDrag("clawd", e)}
         >
-          <Clawd state={petState} settings={settings} />
+          <div className="clawd-glow" />
+          <img className="clawd-image" src={clawdImage} alt="" draggable={false} />
+          {settings.showStatusProp ? <StateProp state={petState} /> : null}
+          <div className="shadow" />
         </div>
         {settings.showBubbles && toolRibbon.length > 0 ? (
           <div
-            className={`edit-hitzone ${editMode ? "active" : ""} ${dragTarget === "ribbon" ? "dragging" : ""}`}
-            style={{ position: "absolute", left: -40, bottom: 24, width: 140, height: 140, transform: `translate(${offsets.ribbon?.x ?? 0}px, ${offsets.ribbon?.y ?? 0}px)`, zIndex: editMode ? 10 : 8, pointerEvents: editMode ? "auto" : "none", cursor: editMode ? "move" : undefined }}
+            className={`tool-ribbon edit-drag ${dragTarget === "ribbon" ? "dragging" : ""}`}
+            style={{ transform: `translate(${offsets.ribbon?.x ?? 0}px, ${offsets.ribbon?.y ?? 0}px)`, "--bubble-scale": settings.bubbleScale, "--bubble-opacity": settings.bubbleOpacity } as React.CSSProperties}
             onMouseDown={e => startDrag("ribbon", e)}
           >
-            <ToolRibbon events={toolRibbon} settings={settings} />
+            {toolRibbon.slice(0, 5).map((event) => {
+              const tool = event.tool ?? "Unknown";
+              const color = toolColorMap[tool] ?? "steel";
+              const isEnd = event.event === "tool_end";
+              const icon = toolIconMap[tool] ?? "?";
+              return (
+                <div key={event.id} className={`ribbon-row color-${color} ${isEnd ? "ribbon-done" : ""}`}>
+                  <span className="ribbon-dot" />
+                  <code className="ribbon-icon">{icon}</code>
+                  <span className="ribbon-label">{tool}</span>
+                  {event.detail ? <span className="ribbon-detail">{event.detail}</span> : null}
+                </div>
+              );
+            })}
           </div>
         ) : null}
       </section>
