@@ -174,12 +174,19 @@ function PetApp() {
     const move = (e: MouseEvent) => {
       const key = dragging.current;
       if (!key) return;
-      const offsets = offRef.current;
       const { mx, my, ox, oy } = dragStart.current;
-      const nx = ox + e.clientX - mx;
-      const ny = oy + e.clientY - my;
-      const p = (settings.positionOffsets ?? {});
-      updateSettings({ positionOffsets: { ...p, [key]: { x: nx, y: ny } } });
+      if (key.startsWith("resize-")) {
+        const zoneKey = key.slice(7);
+        const nw = Math.max(60, ox + e.clientX - mx);
+        const nh = Math.max(40, oy + e.clientY - my);
+        const sizes = settings.zoneSizes ?? {};
+        updateSettings({ zoneSizes: { ...sizes, [zoneKey]: { w: Math.round(nw), h: Math.round(nh) } } });
+      } else {
+        const nx = ox + e.clientX - mx;
+        const ny = oy + e.clientY - my;
+        const p = (settings.positionOffsets ?? {});
+        updateSettings({ positionOffsets: { ...p, [key]: { x: nx, y: ny } } });
+      }
     };
     const up = () => { dragging.current = null; };
     window.addEventListener("mousemove", move);
@@ -192,6 +199,7 @@ function PetApp() {
   if (!settings.petEnabled) return <main className="pet-stage pet-disabled" />;
 
   const offsets = settings.positionOffsets ?? {};
+  const zoneSizes = (settings.zoneSizes ?? {}) as Record<string, { w: number; h: number } | undefined>;
 
   function begin(k: string, e: React.MouseEvent) {
     if (!editMode) return;
@@ -200,15 +208,32 @@ function PetApp() {
     dragStart.current = { mx: e.clientX, my: e.clientY, ox: offsets[k as keyof typeof offsets]?.x ?? 0, oy: offsets[k as keyof typeof offsets]?.y ?? 0 };
   }
 
+  function beginResize(k: string, e: React.MouseEvent) {
+    if (!editMode) return;
+    e.stopPropagation();
+    dragging.current = `resize-${k}`;
+    const sz = zoneSizes[k];
+    dragStart.current = { mx: e.clientX, my: e.clientY, ox: sz?.w ?? 0, oy: sz?.h ?? 0 };
+  }
+
   if (editMode) {
+    const cs = zoneSizes.clawd ?? { w: 0, h: 0 };
+    const bs = zoneSizes.bubble ?? { w: 0, h: 0 };
+    const rs = zoneSizes.ribbon ?? { w: 0, h: 0 };
+
     return (
       <main className="pet-stage edit-mode">
         <section className="pet-anchor" style={{ transform: `translateX(-50%) scale(${settings.petScale})` }}>
           {/* Zone 1: Clawd */}
           <div className="edit-zone edit-zone-clawd"
-            style={{ transform: `translate(${offsets.clawd?.x ?? 0}px, ${offsets.clawd?.y ?? 0}px)` }}
+            style={{
+              transform: `translate(${offsets.clawd?.x ?? 0}px, ${offsets.clawd?.y ?? 0}px)`,
+              width: cs.w ? `${cs.w}px` : undefined,
+              height: cs.h ? `${cs.h}px` : undefined
+            }}
             onMouseDown={e => begin("clawd", e)}>
             <span className="edit-zone-label">Clawd</span>
+            <span className="zone-resize" onMouseDown={e => beginResize("clawd", e)} />
             <div className="clawd" style={{ position: "absolute", left: 0, bottom: 0, width: 226, height: 238, animation: "none" }}>
               <div className="clawd-glow" />
               <img className="clawd-image" src={clawdImage} alt="" draggable={false} />
@@ -217,9 +242,16 @@ function PetApp() {
           </div>
           {/* Zone 2: 气泡/卡片 */}
           <div className="edit-zone edit-zone-bubble"
-            style={{ transform: `translate(${offsets.bubble?.x ?? 0}px, ${offsets.bubble?.y ?? 0}px)` }}
+            style={{
+              transform: `translate(${offsets.bubble?.x ?? 0}px, ${offsets.bubble?.y ?? 0}px)`,
+              width: bs.w ? `${bs.w}px` : undefined,
+              height: bs.h ? `${bs.h}px` : undefined,
+              right: bs.w ? "auto" : undefined,
+              bottom: bs.h ? "auto" : undefined
+            }}
             onMouseDown={e => begin("bubble", e)}>
             <span className="edit-zone-label">气泡 / 卡片</span>
+            <span className="zone-resize" onMouseDown={e => beginResize("bubble", e)} />
             {currentEvent && getFeedbackMode(currentEvent, settings) !== "ribbon" ? (
               <div className="bubble-wrapper" style={{ pointerEvents: "none" }}>
                 <Bubble event={currentEvent} state={stateFromEvent(currentEvent)} settings={settings} />
@@ -228,9 +260,14 @@ function PetApp() {
           </div>
           {/* Zone 3: 工具条 */}
           <div className="edit-zone edit-zone-ribbon"
-            style={{ transform: `translate(${offsets.ribbon?.x ?? 0}px, ${offsets.ribbon?.y ?? 0}px)` }}
+            style={{
+              transform: `translate(${offsets.ribbon?.x ?? 0}px, ${offsets.ribbon?.y ?? 0}px)`,
+              width: rs.w ? `${rs.w}px` : undefined,
+              height: rs.h ? `${rs.h}px` : undefined
+            }}
             onMouseDown={e => begin("ribbon", e)}>
             <span className="edit-zone-label">工具条</span>
+            <span className="zone-resize" onMouseDown={e => beginResize("ribbon", e)} />
           </div>
         </section>
       </main>

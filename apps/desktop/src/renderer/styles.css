@@ -39,7 +39,7 @@ button { border: 0; cursor: pointer; }
 }
 .pet-stage.edit-mode {
   pointer-events: auto;
-  background: rgba(215, 119, 87, 0.06);
+  background: transparent;
 }
 .edit-drag { cursor: default; transition: opacity 150ms ease; }
 .edit-drag.dragging { opacity: .88; }
@@ -73,10 +73,23 @@ button { border: 0; cursor: pointer; }
 .edit-zone-clawd { left: 0; bottom: 0; width: 226px; height: 238px; z-index: 4; }
 .edit-zone-bubble { left: -6px; top: 0; right: -6px; bottom: 242px; z-index: 2; }
 .edit-zone-ribbon { left: -44px; bottom: 22px; width: 144px; height: 144px; z-index: 3; }
+.zone-resize {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 12px;
+  height: 12px;
+  background: var(--coral);
+  border: 2px solid var(--black);
+  border-radius: 2px;
+  cursor: nwse-resize;
+  z-index: 10;
+}
 .pet-anchor {
   position: absolute;
   left: 50%;
   bottom: 0;
+  overflow: visible;
   transform: translateX(-50%);
   width: 226px;
   height: 360px;
