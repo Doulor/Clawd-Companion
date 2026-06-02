@@ -187,6 +187,16 @@ function PetApp() {
           updateSettings({ thoughtScale: ns, cardScale: ns });
         } else if (zoneKey === "ribbon") {
           updateSettings({ bubbleScale: Math.max(0.6, Math.min(2, ox + (e.clientX - mx) / 144)) });
+        } else if (zoneKey.startsWith("edge")) {
+          // 拖动窗口边缘调整 petScale (窗口整体大小)
+          const base = 260;
+          onChangeScale: {
+            let ns: number;
+            if (zoneKey === "edgeE" || zoneKey === "edgeW") ns = Math.max(0.7, Math.min(2, ox + (e.clientX - mx) / base));
+            else if (zoneKey === "edgeN" || zoneKey === "edgeS") ns = Math.max(0.7, Math.min(2, oy + (e.clientY - my) / 392));
+            else ns = Math.max(0.7, Math.min(2, ox + oy + (e.clientX - mx + e.clientY - my) / (base + 392)));
+            updateSettings({ petScale: ns });
+          }
         }
       } else {
         const nx = ox + e.clientX - mx;
@@ -219,8 +229,12 @@ function PetApp() {
     if (!editMode) return;
     e.stopPropagation();
     dragging.current = `resize-${k}`;
-    const s = scaleRef.current;
-    dragStart.current = { mx: e.clientX, my: e.clientY, ox: s[k as keyof typeof s] ?? 1, oy: s[k as keyof typeof s] ?? 1 };
+    if (k.startsWith("edge")) {
+      dragStart.current = { mx: e.clientX, my: e.clientY, ox: settings.petScale, oy: settings.petScale };
+    } else {
+      const s = scaleRef.current;
+      dragStart.current = { mx: e.clientX, my: e.clientY, ox: s[k as keyof typeof s] ?? 1, oy: s[k as keyof typeof s] ?? 1 };
+    }
   }
 
   if (editMode) {
@@ -232,6 +246,15 @@ function PetApp() {
 
     return (
       <main className="pet-stage edit-mode" style={{ background: "rgba(215, 119, 87, 0.06)" }}>
+        {/* 四条边的 resize 手柄：拖动调整窗口整体大小 */}
+        <span className="edge-handle edge-n" onMouseDown={e => beginResize("edgeN", e)} />
+        <span className="edge-handle edge-s" onMouseDown={e => beginResize("edgeS", e)} />
+        <span className="edge-handle edge-e" onMouseDown={e => beginResize("edgeE", e)} />
+        <span className="edge-handle edge-w" onMouseDown={e => beginResize("edgeW", e)} />
+        <span className="edge-handle edge-ne" onMouseDown={e => beginResize("edgeNE", e)} />
+        <span className="edge-handle edge-nw" onMouseDown={e => beginResize("edgeNW", e)} />
+        <span className="edge-handle edge-se" onMouseDown={e => beginResize("edgeSE", e)} />
+        <span className="edge-handle edge-sw" onMouseDown={e => beginResize("edgeSW", e)} />
         <section className="pet-anchor" style={{ transform: `translateX(-50%) scale(${settings.petScale})` }}>
           {/* Zone 1: Clawd */}
           <div className="edit-zone edit-zone-clawd"
