@@ -5,6 +5,9 @@ node_modules/
 dist/
 release/
 
+# Unused animation assets
+apps/desktop/src/renderer/clawd-anims/
+
 # User data
 *.log
 
