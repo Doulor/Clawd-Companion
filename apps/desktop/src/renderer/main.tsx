@@ -135,10 +135,7 @@ function useCompanion() {
         setToolRibbon(previous => [event, ...previous].slice(0, 8));
         window.setTimeout(() => {
           setToolRibbon(previous => previous.filter(e => e.id !== event.id));
-        }, 3500);
-      }
-      if (event.event === "tool_end") {
-        setToolRibbon(previous => previous.filter(e => !(e.tool === event.tool && e.event === "tool_start")));
+        }, 4000);
       }
       const timeout = (event.event === "done" || event.event === "error" ? 5.2 : event.event === "tool_end" ? 2 : settings.bubbleDuration) * 1000;
       window.setTimeout(() => {
@@ -216,15 +213,27 @@ function PetApp() {
         style={{ transform: `translateX(-50%) scale(${settings.petScale})`, opacity: settings.petOpacity }}
       >
         {settings.showBubbles && currentEvent && getFeedbackMode(currentEvent, settings) !== "ribbon" ? (
-          <div className={`draggable ${editMode ? "can-drag" : ""} ${dragTarget === "bubble" ? "dragging" : ""}`} style={{ transform: `translate(${offsets.bubble?.x ?? 0}px, ${offsets.bubble?.y ?? 0}px)` }} onMouseDown={e => startDrag("bubble", e)}>
+          <div
+            className={`edit-hitzone ${editMode ? "active" : ""} ${dragTarget === "bubble" ? "dragging" : ""}`}
+            style={{ position: "absolute", left: -4, top: 10, right: -4, bottom: "auto", height: 104, transform: `translate(${offsets.bubble?.x ?? 0}px, ${offsets.bubble?.y ?? 0}px)`, zIndex: editMode ? 10 : 8, pointerEvents: editMode ? "auto" : "none", cursor: editMode ? "move" : undefined }}
+            onMouseDown={e => startDrag("bubble", e)}
+          >
             <Bubble event={currentEvent} state={stateFromEvent(currentEvent)} settings={settings} />
           </div>
         ) : null}
-        <div className={`draggable ${editMode ? "can-drag" : ""} ${dragTarget === "clawd" ? "dragging" : ""}`} style={{ transform: `translate(${offsets.clawd?.x ?? 0}px, ${offsets.clawd?.y ?? 0}px)` }} onMouseDown={e => startDrag("clawd", e)}>
+        <div
+          className={`edit-hitzone ${editMode ? "active" : ""} ${dragTarget === "clawd" ? "dragging" : ""}`}
+          style={{ position: "absolute", left: 0, bottom: 0, width: 226, height: 238, transform: `translate(${offsets.clawd?.x ?? 0}px, ${offsets.clawd?.y ?? 0}px)`, zIndex: editMode ? 10 : 4, pointerEvents: editMode ? "auto" : "none", cursor: editMode ? "move" : undefined }}
+          onMouseDown={e => startDrag("clawd", e)}
+        >
           <Clawd state={petState} settings={settings} />
         </div>
         {settings.showBubbles && toolRibbon.length > 0 ? (
-          <div className={`draggable ${editMode ? "can-drag" : ""} ${dragTarget === "ribbon" ? "dragging" : ""}`} style={{ transform: `translate(${offsets.ribbon?.x ?? 0}px, ${offsets.ribbon?.y ?? 0}px)` }} onMouseDown={e => startDrag("ribbon", e)}>
+          <div
+            className={`edit-hitzone ${editMode ? "active" : ""} ${dragTarget === "ribbon" ? "dragging" : ""}`}
+            style={{ position: "absolute", left: -40, bottom: 24, width: 140, height: 140, transform: `translate(${offsets.ribbon?.x ?? 0}px, ${offsets.ribbon?.y ?? 0}px)`, zIndex: editMode ? 10 : 8, pointerEvents: editMode ? "auto" : "none", cursor: editMode ? "move" : undefined }}
+            onMouseDown={e => startDrag("ribbon", e)}
+          >
             <ToolRibbon events={toolRibbon} settings={settings} />
           </div>
         ) : null}
@@ -348,7 +357,6 @@ function SettingsApp() {
   const [now, setNow] = useState(Date.now());
   const hookCommand = "node D:/build/GitLocal/claude-code-companion/dist/hook-forwarder/index.js";
   const hookConfigPath = "C:/Users/Doulor/.claude/settings.json";
-  const launchPath = "D:/build/GitLocal/claude-code-companion/静默启动Clawd.vbs";
   const hookSnippet = useMemo(() => buildHookSnippet(hookCommand), [hookCommand]);
 
   useEffect(() => {
@@ -481,10 +489,6 @@ function SettingsApp() {
           <Toggle label="完成时系统通知" checked={settings.doneSound} onChange={doneSound => updateSettings({ doneSound })} />
           <Slider label="气泡停留" min={3} max={18} step={1} value={settings.bubbleDuration} format={value => `${value} 秒`} onChange={bubbleDuration => updateSettings({ bubbleDuration })} />
           <Slider label="事件历史" min={12} max={100} step={4} value={settings.eventHistoryLimit} format={value => `${value} 条`} onChange={eventHistoryLimit => updateSettings({ eventHistoryLimit })} />
-          <div className="launch-note">
-            想摆脱命令行窗口，请双击项目根目录的 <code>静默启动Clawd.vbs</code>。退出应用请用托盘菜单。
-            <button className="inline-action" onClick={() => copy(launchPath, "launch")}>{copied === "launch" ? "已复制路径" : "复制静默启动路径"}</button>
-          </div>
           <div className="panel-divider" />
           <h3 className="panel-subtitle">工具显示方式</h3>
           <p className="note" style={{ marginTop: 0, marginBottom: 10 }}>为每种工具单独设置显示方式。设为"跟随"则使用上方的状态默认设置。</p>
