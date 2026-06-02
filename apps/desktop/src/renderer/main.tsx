@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   Bell,
@@ -162,20 +162,66 @@ function useCompanion() {
 }
 
 function PetApp() {
-  const { settings, currentEvent, petState, toolRibbon } = useCompanion();
+  const { settings, updateSettings, currentEvent, petState, toolRibbon } = useCompanion();
+  const [editMode, setEditMode] = useState(false);
+  const [dragTarget, setDragTarget] = useState<string | null>(null);
+  const dragOrigin = useRef<{ mouseX: number; mouseY: number; offX: number; offY: number } | null>(null);
+
+  useEffect(() => {
+    if (editMode) void window.companion.setPetInteractive(true);
+    else void window.companion.setPetInteractive(false);
+  }, [editMode]);
+
+  useEffect(() => {
+    if (!dragTarget) return;
+    function onMouseMove(e: MouseEvent) {
+      if (!dragOrigin.current) return;
+      const dx = e.clientX - dragOrigin.current.mouseX;
+      const dy = e.clientY - dragOrigin.current.mouseY;
+      const key = dragTarget as "clawd" | "bubble" | "ribbon";
+      const offsets = settings.positionOffsets ?? {};
+      updateSettings({ positionOffsets: { ...offsets, [key]: { x: dragOrigin.current.offX + dx, y: dragOrigin.current.offY + dy } } });
+    }
+    function onMouseUp() { setDragTarget(null); dragOrigin.current = null; }
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+    return () => { window.removeEventListener("mousemove", onMouseMove); window.removeEventListener("mouseup", onMouseUp); };
+  }, [dragTarget, settings.positionOffsets, updateSettings]);
 
   if (!settings.petEnabled) return <main className="pet-stage pet-disabled" />;
 
+  const offsets = settings.positionOffsets ?? {};
+
+  function startDrag(key: string, e: React.MouseEvent) {
+    if (!editMode) return;
+    e.stopPropagation();
+    setDragTarget(key);
+    dragOrigin.current = { mouseX: e.clientX, mouseY: e.clientY, offX: offsets[key as keyof typeof offsets]?.x ?? 0, offY: offsets[key as keyof typeof offsets]?.y ?? 0 };
+  }
+
   return (
-    <main className="pet-stage">
+    <main className={`pet-stage ${editMode ? "edit-mode" : ""}`}>
       <section
         className="pet-anchor"
         style={{ transform: `translateX(-50%) scale(${settings.petScale})`, opacity: settings.petOpacity }}
       >
-        {settings.showBubbles && currentEvent && getFeedbackMode(currentEvent, settings) !== "ribbon" ? <Bubble event={currentEvent} state={stateFromEvent(currentEvent)} settings={settings} /> : null}
-        <Clawd state={petState} settings={settings} />
-        {settings.showBubbles && toolRibbon.length > 0 ? <ToolRibbon events={toolRibbon} settings={settings} /> : null}
+        {settings.showBubbles && currentEvent && getFeedbackMode(currentEvent, settings) !== "ribbon" ? (
+          <div className={`draggable ${editMode ? "can-drag" : ""} ${dragTarget === "bubble" ? "dragging" : ""}`} style={{ transform: `translate(${offsets.bubble?.x ?? 0}px, ${offsets.bubble?.y ?? 0}px)` }} onMouseDown={e => startDrag("bubble", e)}>
+            <Bubble event={currentEvent} state={stateFromEvent(currentEvent)} settings={settings} />
+          </div>
+        ) : null}
+        <div className={`draggable ${editMode ? "can-drag" : ""} ${dragTarget === "clawd" ? "dragging" : ""}`} style={{ transform: `translate(${offsets.clawd?.x ?? 0}px, ${offsets.clawd?.y ?? 0}px)` }} onMouseDown={e => startDrag("clawd", e)}>
+          <Clawd state={petState} settings={settings} />
+        </div>
+        {settings.showBubbles && toolRibbon.length > 0 ? (
+          <div className={`draggable ${editMode ? "can-drag" : ""} ${dragTarget === "ribbon" ? "dragging" : ""}`} style={{ transform: `translate(${offsets.ribbon?.x ?? 0}px, ${offsets.ribbon?.y ?? 0}px)` }} onMouseDown={e => startDrag("ribbon", e)}>
+            <ToolRibbon events={toolRibbon} settings={settings} />
+          </div>
+        ) : null}
       </section>
+      <button className={`pet-edit-btn ${editMode ? "active" : ""}`} title={editMode ? "完成调整" : "调整位置"} onClick={() => setEditMode(!editMode)}>
+        {editMode ? "✓" : "✎"}
+      </button>
     </main>
   );
 }

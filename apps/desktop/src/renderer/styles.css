@@ -37,6 +37,44 @@ button { border: 0; cursor: pointer; }
   -webkit-user-select: none;
   pointer-events: none;
 }
+.pet-stage.edit-mode {
+  pointer-events: auto;
+  background: rgba(215, 119, 87, 0.06);
+}
+.draggable { position: absolute; inset: 0; pointer-events: none; }
+.draggable.can-drag { pointer-events: auto; cursor: move; }
+.draggable.dragging { opacity: .85; }
+.draggable.can-drag::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border: 2px dashed rgba(215, 119, 87, 0.4);
+  border-radius: 8px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+.draggable.can-drag:hover::after { opacity: 1; }
+.pet-edit-btn {
+  position: absolute;
+  left: 18px;
+  top: 18px;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  color: var(--ink);
+  background: rgba(255, 249, 234, 0.92);
+  border: 1.5px solid var(--line);
+  box-shadow: 0 4px 14px rgba(43, 31, 21, 0.12);
+  font-size: 18px;
+  z-index: 20;
+  pointer-events: auto;
+  transition: background 150ms ease, transform 150ms ease;
+}
+.pet-edit-btn:hover { background: var(--honey); transform: translateY(-1px); }
+.pet-edit-btn.active { background: var(--coral); color: #fff; border-color: rgba(217, 107, 90, 0.4); }
 .pet-anchor {
   position: absolute;
   left: 50%;
