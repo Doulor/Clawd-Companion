@@ -127,7 +127,7 @@ function useCompanion() {
     const offConnection = window.companion.onConnection(setConnection);
     const offEvent = window.companion.onEvent(event => {
       setEvents(previous => [event, ...previous].slice(0, settings.eventHistoryLimit));
-      setPetState(stateFromEvent(event));
+      if (event.event !== "tool_end") setPetState(stateFromEvent(event));
       if (event.event !== "tool_end") {
         setCurrentEvent(event);
       }
@@ -137,7 +137,7 @@ function useCompanion() {
           setToolRibbon(previous => previous.filter(e => e.id !== event.id));
         }, 4000);
       }
-      const timeout = (event.event === "done" || event.event === "error" ? 5.2 : event.event === "tool_end" ? 2 : settings.bubbleDuration) * 1000;
+      const timeout = (event.event === "done" || event.event === "error" ? 5.2 : settings.bubbleDuration) * 1000;
       window.setTimeout(() => {
         setPetState(current => current === stateFromEvent(event) ? "idle" : current);
         setCurrentEvent(current => current?.id === event.id ? null : current);
@@ -198,20 +198,20 @@ function PetApp() {
 
   return (
     <main className={`pet-stage ${editMode ? "edit-mode" : ""}`}>
-      {editMode ? (
-        <div className="edit-guides">
-          <div className="guide guide-clawd" />
-          <div className="guide guide-bubble" />
-          <div className="guide guide-ribbon" />
-          <div className="guide-label guide-label-clawd">Clawd 默认位置</div>
-          <div className="guide-label guide-label-bubble">气泡/卡片 默认位置</div>
-          <div className="guide-label guide-label-ribbon">工具条 默认位置</div>
-        </div>
-      ) : null}
       <section
         className="pet-anchor"
         style={{ transform: `translateX(-50%) scale(${settings.petScale})`, opacity: settings.petOpacity }}
       >
+        {editMode ? (
+          <>
+            <div className="guide guide-clawd" />
+            <div className="guide guide-bubble" />
+            <div className="guide guide-ribbon" />
+            <span className="guide-label" style={{ left: "50%", bottom: 242, transform: "translateX(-50%)" }}>Clawd</span>
+            <span className="guide-label" style={{ left: "50%", top: 118, transform: "translateX(-50%)" }}>气泡/卡片</span>
+            <span className="guide-label" style={{ left: 16, bottom: 168 }}>工具条</span>
+          </>
+        ) : null}
         {settings.showBubbles && currentEvent && getFeedbackMode(currentEvent, settings) !== "ribbon" ? (
           <div
             className={`bubble-wrapper edit-drag ${dragTarget === "bubble" ? "dragging" : ""}`}

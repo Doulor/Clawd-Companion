@@ -43,11 +43,12 @@ button { border: 0; cursor: pointer; }
 }
 .edit-drag { cursor: default; transition: opacity 150ms ease; }
 .edit-drag.dragging { opacity: .88; }
+.pet-stage.edit-mode .pet-anchor { -webkit-app-region: no-drag; }
 .pet-stage.edit-mode .bubble-wrapper,
 .pet-stage.edit-mode .tool-ribbon,
-.pet-stage.edit-mode .clawd.drag-root { pointer-events: auto; cursor: move; }
+.pet-stage.edit-mode .clawd { pointer-events: auto; cursor: move; }
 .pet-stage.edit-mode .clawd-image { pointer-events: none; }
-.pet-stage.edit-mode .pet-anchor { pointer-events: auto; -webkit-app-region: no-drag; }
+.pet-stage.edit-mode .guide { pointer-events: none; }
 .edit-guides {
   position: absolute;
   inset: 0;
@@ -59,20 +60,19 @@ button { border: 0; cursor: pointer; }
   border: 1.5px dashed rgba(215, 119, 87, 0.45);
   border-radius: 6px;
   background: rgba(215, 119, 87, 0.04);
+  pointer-events: none;
 }
-.guide-clawd { left: 50%; bottom: 0; width: 226px; height: 238px; transform: translateX(-50%); }
-.guide-bubble { left: 50%; top: 10px; width: 240px; height: 104px; transform: translateX(-50%); }
-.guide-ribbon { left: 10px; bottom: 24px; width: 140px; height: 140px; }
+.guide-clawd { left: 0; bottom: 0; width: 226px; height: 238px; }
+.guide-bubble { left: -4px; top: 10px; right: -4px; height: 104px; }
+.guide-ribbon { left: -40px; bottom: 24px; width: 140px; height: 140px; }
 .guide-label {
   position: absolute;
   font-size: 10px;
   font-weight: 700;
   color: var(--amber);
   white-space: nowrap;
+  pointer-events: none;
 }
-.guide-label-clawd { left: 50%; bottom: 242px; transform: translateX(-50%); }
-.guide-label-bubble { left: 50%; top: 118px; transform: translateX(-50%); }
-.guide-label-ribbon { left: 16px; bottom: 168px; }
 .pet-anchor {
   position: absolute;
   left: 50%;
