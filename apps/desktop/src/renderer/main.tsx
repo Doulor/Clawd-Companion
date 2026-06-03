@@ -68,23 +68,23 @@ const sampleEvents: CompanionEvent[] = [
   makeEvent("error", "manual", "执行失败", "有一个工具调用没有成功。")
 ];
 
-function getFeedbackMode(event: CompanionEvent, settings: CompanionSettings): FeedbackMode {
-  if (event.tool && event.tool !== "Unknown" && settings.toolFeedbackModes?.[event.tool]) {
-    return settings.toolFeedbackModes[event.tool]!;
-  }
-  return settings.feedbackModes?.[stateFromEvent(event)] ?? "card";
-}
+const stateFeedbackMode: Record<PetState, FeedbackMode> = {
+  idle: "card",
+  thinking: "card",
+  tool_read: "thought",
+  tool_edit: "card",
+  tool_bash: "thought",
+  tool_search: "thought",
+  tool_mcp: "thought",
+  waiting_permission: "card",
+  done: "card",
+  error: "card"
+};
 
-const feedbackRows: Array<{ state: PetState; label: string }> = [
-  { state: "thinking", label: "思考 / 新消息" },
-  { state: "tool_read", label: "读取文件" },
-  { state: "tool_edit", label: "编辑文件" },
-  { state: "tool_bash", label: "执行命令" },
-  { state: "tool_search", label: "搜索资料" },
-  { state: "waiting_permission", label: "等待确认" },
-  { state: "done", label: "处理完成" },
-  { state: "error", label: "错误" }
-];
+function getFeedbackMode(event: CompanionEvent): FeedbackMode {
+  if (event.tool && event.tool !== "Unknown") return "ribbon";
+  return stateFeedbackMode[stateFromEvent(event)] ?? "card";
+}
 
 const mappingRows: Array<{ source: string; tool?: string; state: PetState; title: string }> = [
   { source: "SessionStart", state: "thinking", title: "会话开始" },
@@ -289,15 +289,37 @@ function PetApp() {
   const dragging = useRef<string | null>(null);
   const dragStart = useRef<{ mx: number; my: number; ox: number; oy: number }>({ mx: 0, my: 0, ox: 0, oy: 0 });
   const offRef = useRef(settings.positionOffsets ?? {});
-  const [testIdleBubble, setTestIdleBubble] = useState(false);
+  const [idleBubbleActive, setIdleBubbleActive] = useState(false);
+  const idleTimers = useRef<number[]>([]);
 
+  // 随机自动触发 idle_bubble + 响应测试按钮
   useEffect(() => {
     const off = window.companion.onTriggerIdleBubble(() => {
-      setTestIdleBubble(true);
-      setTimeout(() => setTestIdleBubble(false), 2500);
+      setIdleBubbleActive(true);
+      setTimeout(() => setIdleBubbleActive(false), 2500);
     });
     return () => off();
   }, []);
+
+  useEffect(() => {
+    if (petState !== "idle" || editMode) {
+      setIdleBubbleActive(false);
+      idleTimers.current.forEach(clearTimeout);
+      idleTimers.current = [];
+      return;
+    }
+    function schedule() {
+      const delay = 20_000 + Math.random() * 40_000;
+      const t1 = window.setTimeout(() => {
+        setIdleBubbleActive(true);
+        const t2 = window.setTimeout(() => setIdleBubbleActive(false), 2500);
+        idleTimers.current.push(t2);
+      }, delay);
+      idleTimers.current = [t1];
+    }
+    schedule();
+    return () => { idleTimers.current.forEach(clearTimeout); idleTimers.current = []; };
+  }, [petState, editMode]);
 
   useEffect(() => {
     if (editMode) {
@@ -436,7 +458,7 @@ function PetApp() {
     const previewEvent = currentEvent ?? editPreviewEvent;
     const previewState = currentEvent ? petState : stateFromEvent(previewEvent);
     const previewStreams = toolStreams.length > 0 ? toolStreams : editPreviewStreams;
-    const bubbleMode = getFeedbackMode(previewEvent, settings);
+    const bubbleMode = getFeedbackMode(previewEvent);
     const cw = Math.round(226 * settings.clawdScale);
     const ch = Math.round(238 * settings.clawdScale);
     const bw = Math.round((bubbleMode === "thought" ? 172 : 234) * (bubbleMode === "thought" ? settings.thoughtScale : settings.cardScale));
@@ -461,13 +483,13 @@ function PetApp() {
         <span className="edge-handle edge-sw" onMouseDown={e => beginResize("edgeSW", e)} />
         <section className="pet-anchor" style={{ transform: `translateX(-50%) scale(${settings.petScale}) translate(${viewOff.x}px, ${viewOff.y}px)` }}>
           <div className="edit-live-layer">
-            {settings.showBubbles && getFeedbackMode(previewEvent, settings) !== "ribbon" ? (
+            {settings.showBubbles && getFeedbackMode(previewEvent) !== "ribbon" ? (
               <div className="bubble-wrapper" style={{ transform: `translate(${offsets.bubble?.x ?? 0}px, ${offsets.bubble?.y ?? 0}px)` }}>
                 <Bubble event={previewEvent} state={stateFromEvent(previewEvent)} settings={settings} />
               </div>
             ) : null}
             <div className={`clawd clawd-${previewState}`} style={{ transform: `translate(${offsets.clawd?.x ?? 0}px, ${offsets.clawd?.y ?? 0}px) scale(${settings.clawdScale})`, opacity: settings.clawdOpacity }}>
-              <ClawdSprite state={previewState} idleBubble={testIdleBubble} />
+              <ClawdSprite state={previewState} idleBubble={idleBubbleActive} />
               {settings.showStatusProp && previewState !== "idle" ? <StateProp state={previewState} /> : null}
             </div>
             {settings.showBubbles ? (
@@ -546,13 +568,13 @@ function PetApp() {
               settings={settings}
             />
           </div>
-        ) : settings.showBubbles && currentEvent && getFeedbackMode(currentEvent, settings) !== "ribbon" ? (
+        ) : settings.showBubbles && currentEvent && getFeedbackMode(currentEvent) !== "ribbon" ? (
           <div className="bubble-wrapper" style={{ transform: `translate(${offsets.bubble?.x ?? 0}px, ${offsets.bubble?.y ?? 0}px)` }}>
             <Bubble event={currentEvent} state={stateFromEvent(currentEvent)} settings={settings} />
           </div>
         ) : null}
         <div className={`clawd clawd-${petState}`} style={{ transform: `translate(${offsets.clawd?.x ?? 0}px, ${offsets.clawd?.y ?? 0}px) scale(${settings.clawdScale})`, opacity: settings.clawdOpacity }}>
-          <ClawdSprite state={petState} idleBubble={testIdleBubble} />
+          <ClawdSprite state={petState} idleBubble={idleBubbleActive} />
           {settings.showStatusProp && petState !== "idle" ? <StateProp state={petState} /> : null}
         </div>
         {settings.showBubbles && toolStreams.length > 0 ? (
@@ -565,7 +587,7 @@ function PetApp() {
 
 function Bubble({ event, state, settings }: { event: CompanionEvent; state: PetState; settings: CompanionSettings }) {
   const toolLabel = event.tool && event.tool !== "Unknown" ? event.tool : event.source === "claude-code" ? "Claude Code" : "Manual";
-  const feedbackMode = getFeedbackMode(event, settings);
+  const feedbackMode = getFeedbackMode(event);
   if (feedbackMode === "thought") {
     return (
       <div className="thought-wrapper" style={{ transform: `scale(${settings.thoughtScale})`, opacity: settings.thoughtOpacity }}>
@@ -932,9 +954,6 @@ function SettingsApp() {
           <Slider label="思维泡透明" min={0.45} max={1} step={0.05} value={settings.thoughtOpacity} format={value => `${Math.round(value * 100)}%`} onChange={thoughtOpacity => updateSettings({ thoughtOpacity })} />
           <Slider label="卡片尺寸" min={0.75} max={1.25} step={0.05} value={settings.cardScale} format={value => `${Math.round(value * 100)}%`} onChange={cardScale => updateSettings({ cardScale })} />
           <Slider label="卡片透明" min={0.45} max={1} step={0.05} value={settings.cardOpacity} format={value => `${Math.round(value * 100)}%`} onChange={cardOpacity => updateSettings({ cardOpacity })} />
-          <div className="feedback-mode-list">
-            {feedbackRows.map(row => <FeedbackModeRow key={row.state} label={row.label} value={settings.feedbackModes?.[row.state] ?? "card"} onChange={mode => updateSettings({ feedbackModes: { ...(settings.feedbackModes ?? {}), [row.state]: mode } })} />)}
-          </div>
         </Panel>
 
         <Panel title="应用行为" icon={<MousePointer2 size={18} />}>
@@ -1152,19 +1171,6 @@ function MappingRow({ row }: { row: { source: string; tool?: string; state: PetS
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return <label className="field"><span>{label}</span>{children}</label>;
-}
-
-function FeedbackModeRow({ label, value, onChange }: { label: string; value: FeedbackMode; onChange: (value: FeedbackMode) => void }) {
-  return (
-    <div className="feedback-mode-row">
-      <span>{label}</span>
-      <div>
-        <button className={value === "thought" ? "active" : ""} onClick={() => onChange("thought")}>气泡</button>
-        <button className={value === "card" ? "active" : ""} onClick={() => onChange("card")}>卡片</button>
-        <button className={value === "ribbon" ? "active" : ""} onClick={() => onChange("ribbon")}>条</button>
-      </div>
-    </div>
-  );
 }
 
 function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (value: boolean) => void }) {

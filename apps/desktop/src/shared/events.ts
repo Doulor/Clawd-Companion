@@ -103,8 +103,6 @@ export interface CompanionSettings {
   permissionScale: number;
   permissionOpacity: number;
   toolStreamMinDuration: number;
-  feedbackModes: Partial<Record<PetState, FeedbackMode>>;
-  toolFeedbackModes: Partial<Record<ToolName, FeedbackMode>>;
   showStatusProp: boolean;
   launchAtLogin: boolean;
   openSettingsOnStart: boolean;
@@ -179,31 +177,6 @@ export const defaultSettings: CompanionSettings = {
   permissionScale: 0.85,
   permissionOpacity: 1,
   toolStreamMinDuration: 0.8,
-  feedbackModes: {
-    thinking: "card",
-    tool_read: "thought",
-    tool_edit: "card",
-    tool_bash: "thought",
-    tool_search: "thought",
-    waiting_permission: "card",
-    done: "card",
-    error: "card"
-  },
-  toolFeedbackModes: {
-    Read: "ribbon",
-    Edit: "ribbon",
-    Write: "ribbon",
-    Bash: "ribbon",
-    Grep: "ribbon",
-    Glob: "ribbon",
-    WebFetch: "ribbon",
-    WebSearch: "ribbon",
-    Notebook: "ribbon",
-    Agent: "ribbon",
-    Skill: "ribbon",
-    Task: "ribbon",
-    MCP: "ribbon"
-  },
   showStatusProp: true,
   launchAtLogin: false,
   openSettingsOnStart: true,
