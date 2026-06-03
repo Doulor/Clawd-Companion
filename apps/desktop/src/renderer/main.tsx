@@ -308,16 +308,19 @@ function PetApp() {
       idleTimers.current = [];
       return;
     }
-    function schedule() {
+    function scheduleNext() {
       const delay = 20_000 + Math.random() * 40_000;
       const t1 = window.setTimeout(() => {
         setIdleBubbleActive(true);
-        const t2 = window.setTimeout(() => setIdleBubbleActive(false), 2500);
-        idleTimers.current.push(t2);
+        const t2 = window.setTimeout(() => {
+          setIdleBubbleActive(false);
+          scheduleNext();
+        }, 2500);
+        idleTimers.current = [t2];
       }, delay);
       idleTimers.current = [t1];
     }
-    schedule();
+    scheduleNext();
     return () => { idleTimers.current.forEach(clearTimeout); idleTimers.current = []; };
   }, [petState, editMode]);
 
@@ -738,16 +741,19 @@ function Clawd({ state, settings, forceIdleBubble }: { state: PetState; settings
       idleTimers.current = [];
       return;
     }
-    function schedule() {
+    function scheduleNext() {
       const delay = 20_000 + Math.random() * 40_000;
       const t1 = window.setTimeout(() => {
         setShowIdleBubble(true);
-        const t2 = window.setTimeout(() => setShowIdleBubble(false), 2500);
-        idleTimers.current.push(t2);
+        const t2 = window.setTimeout(() => {
+          setShowIdleBubble(false);
+          scheduleNext();
+        }, 2500);
+        idleTimers.current = [t2];
       }, delay);
       idleTimers.current = [t1];
     }
-    schedule();
+    scheduleNext();
     return () => { idleTimers.current.forEach(clearTimeout); idleTimers.current = []; };
   }, [state]);
 
