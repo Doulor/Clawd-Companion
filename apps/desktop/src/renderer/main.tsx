@@ -643,20 +643,18 @@ function PetApp() {
             <span className="zone-resize" onMouseDown={e => beginResize("permission", e)} />
           </div>
           {settings.multiSessionEnabled && [0, 1, 2].map(i => {
-            const companionOff = settings.positionOffsets?.companion ?? { x: 80, y: -120 };
             const cScale = settings.companionScale ?? 0.6;
-            const cx = (offsets.clawd?.x ?? 0) + companionOff.x + i * 100;
-            const cy = (offsets.clawd?.y ?? 0) + companionOff.y - i * 80;
+            const off = (offsets as any)[`companion${i}`] ?? { x: 80 + i * 100, y: -120 - i * 80 };
             return (
               <div key={i} className="edit-zone edit-zone-companion"
                 style={{
                   left: 0,
                   bottom: 0,
-                  transform: `translate(${cx}px, ${cy}px) scale(${cScale})`,
+                  transform: `translate(${off.x}px, ${off.y}px) scale(${cScale})`,
                   width: 168,
                   height: 160
                 }}
-                onMouseDown={e => begin("companion", e)}>
+                onMouseDown={e => begin(`companion${i}`, e)}>
                 <span className="edit-zone-label">小 Clawd {i + 1}</span>
               </div>
             );
@@ -927,10 +925,10 @@ function ClawdSprite({ state, idleBubble, eventType, stateAnimations }: { state:
 
 function CompanionClawd({ session, index, settings, showTitle, exiting, mainClawdOffset }: { session: CompanionSession; index: number; settings: CompanionSettings; showTitle: boolean; exiting?: boolean; mainClawdOffset: { x: number; y: number } }) {
   const scale = settings.companionScale ?? 0.6;
-  const companionOff = settings.positionOffsets?.companion ?? { x: 0, y: 0 };
-  // 从大 Clawd 位置出发，加上 companion 偏移和每个小 Clawd 的递增偏移
-  const baseX = mainClawdOffset.x + companionOff.x + index * 100;
-  const baseY = mainClawdOffset.y + companionOff.y - index * 80;
+  const offsets = settings.positionOffsets ?? {};
+  const off = (offsets as any)[`companion${index}`] ?? { x: 80 + index * 100, y: -120 - index * 80 };
+  const baseX = off.x;
+  const baseY = off.y;
 
   return (
     <div

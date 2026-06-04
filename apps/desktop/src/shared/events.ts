@@ -148,6 +148,9 @@ export interface CompanionSettings {
     ribbon?: { x: number; y: number };
     permission?: { x: number; y: number };
     companion?: { x: number; y: number };
+    companion0?: { x: number; y: number };
+    companion1?: { x: number; y: number };
+    companion2?: { x: number; y: number };
     view?: { x: number; y: number };
   };
   zoneSizes?: {
@@ -245,6 +248,9 @@ export const defaultSettings: CompanionSettings = {
     ribbon: { x: 677, y: -80 },
     permission: { x: 560, y: -20 },
     companion: { x: 80, y: -120 },
+    companion0: { x: 80, y: -120 },
+    companion1: { x: 180, y: -200 },
+    companion2: { x: 280, y: -280 },
     view: { x: 0, y: 0 }
   },
   zoneSizes: {},
