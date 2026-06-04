@@ -1664,8 +1664,8 @@ function IdleAnimSettings({ config, onChange, settings, updateSettings }: { conf
         onChange={(low, high) => onChange({ ...config, repeatMin: low, repeatMax: high })}
       />
       <div className="panel-divider" />
-      <h3 className="panel-subtitle">各 Clawd 工作时待机动画</h3>
-      <p className="note">有会话运行但没有工具调用时，播放选中的动画。工具调用时仍会切换到对应动画。</p>
+      <h3 className="panel-subtitle">各 Clawd 待机动画</h3>
+      <p className="note">选择「随机待机动画」时使用上方动画池配置循环播放；选择固定动画则始终重复播放该 GIF，替代默认的静态 PNG。</p>
       <div className="clawd-idle-grid">
         {[0, 1, 2, 3].map(i => {
           const currentValue = companionAnimValues[i];

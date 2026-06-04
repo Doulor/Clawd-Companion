@@ -1458,18 +1458,17 @@ input[type="range"]:focus { box-shadow: none; }
   position: absolute;
   top: 100%;
   left: 0;
-  right: 0;
   z-index: 100;
   margin-top: 4px;
   background: var(--paper);
   border: 1px solid var(--line);
   border-radius: 8px;
   box-shadow: 0 8px 24px rgba(43, 31, 21, 0.15);
-  padding: 6px;
-  display: flex;
+  padding: 8px;
+  display: grid;
+  grid-template-columns: repeat(4, 64px);
   gap: 6px;
-  flex-wrap: wrap;
-  max-width: 360px;
+  width: fit-content;
 }
 .clawd-idle-option {
   display: flex;
