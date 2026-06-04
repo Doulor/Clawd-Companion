@@ -1574,16 +1574,6 @@ const idleSpriteOptions: Array<{ key: string; label: string; w: number; h: numbe
 
 function IdleAnimSettings({ config, onChange, settings, updateSettings }: { config: IdleAnimConfig; onChange: (cfg: IdleAnimConfig) => void; settings: CompanionSettings; updateSettings: (s: Partial<CompanionSettings>) => void }) {
   const [openPicker, setOpenPicker] = useState<number | null>(null);
-  const wrapRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (openPicker === null) return;
-    function handle(e: MouseEvent) {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpenPicker(null);
-    }
-    document.addEventListener("mousedown", handle);
-    return () => document.removeEventListener("mousedown", handle);
-  }, [openPicker]);
 
   function toggleSprite(key: string) {
     const next = config.selectedSprites.includes(key)
@@ -1593,7 +1583,6 @@ function IdleAnimSettings({ config, onChange, settings, updateSettings }: { conf
   }
 
   const companionLabels = ["主 Clawd", "小 Clawd 1", "小 Clawd 2", "小 Clawd 3"];
-  const companionAnimKeys = ["mainClawdIdleAnimation", "companionIdleAnimations[0]", "companionIdleAnimations[1]", "companionIdleAnimations[2]"];
   const companionAnimValues = [
     (settings as any).mainClawdIdleAnimation ?? "random",
     settings.companionIdleAnimations?.[0] ?? "thinking",
@@ -1612,15 +1601,13 @@ function IdleAnimSettings({ config, onChange, settings, updateSettings }: { conf
   }
 
   function getAnimLabel(value: string) {
-    if (value === "random") return "随机待机动画";
+    if (value === "random") return "随机";
     const opt = idleSpriteOptions.find(o => o.key === value);
     return opt?.label ?? value;
   }
 
-  const allOptions = [{ key: "random", label: "随机待机动画", w: 0, h: 0 }, ...idleSpriteOptions];
-
   return (
-    <div className="idle-anim-settings" ref={wrapRef}>
+    <div className="idle-anim-settings">
       <Toggle label="启用待机随机动画" checked={config.enabled} onChange={enabled => onChange({ ...config, enabled })} />
       <div className="panel-divider" />
       <h3 className="panel-subtitle">可选动画池</h3>
@@ -1665,59 +1652,67 @@ function IdleAnimSettings({ config, onChange, settings, updateSettings }: { conf
       />
       <div className="panel-divider" />
       <h3 className="panel-subtitle">各 Clawd 待机动画</h3>
-      <p className="note">选择「随机待机动画」时使用上方动画池配置循环播放；选择固定动画则始终重复播放该 GIF，替代默认的静态 PNG。</p>
-      <div className="clawd-idle-grid">
-        {[0, 1, 2, 3].map(i => {
+      <p className="note">选择「随机」时使用上方动画池配置循环播放；选择固定动画则始终重复播放该 GIF，替代默认的静态 PNG。</p>
+      <div className="state-anim-grid">
+        {companionLabels.map((label, i) => {
           const currentValue = companionAnimValues[i];
           const isOpen = openPicker === i;
           return (
-            <div key={i} className="clawd-idle-item">
-              <span className="clawd-idle-label">{companionLabels[i]}</span>
-              <div className="clawd-idle-picker-wrap">
-                <button className={`clawd-idle-picker ${isOpen ? "active" : ""}`} onClick={() => setOpenPicker(isOpen ? null : i)}>
-                  <div className="sprite-preview-box">
-                    {currentValue === "random" ? (
-                      <span className="clawd-idle-random">?</span>
-                    ) : (
-                      <span
-                        className={`clawd-sprite clawd-sprite-${currentValue} clawd-gif-${idleBubbleGifClass[currentValue] ?? currentValue}`}
-                        style={{ transform: `scale(${48 / Math.max(168, 168)})` }}
-                      />
-                    )}
-                  </div>
-                  <span className="clawd-idle-value">{getAnimLabel(currentValue)}</span>
-                </button>
-                {isOpen && (
-                  <div className="clawd-idle-dropdown">
-                    {allOptions.map(opt => (
-                      <button
-                        key={opt.key}
-                        className={`clawd-idle-option ${currentValue === opt.key ? "active" : ""}`}
-                        onClick={() => { setCompanionAnim(i, opt.key); setOpenPicker(null); }}
-                      >
-                        {opt.key === "random" ? (
-                          <span className="clawd-idle-random-sm">?</span>
-                        ) : (
-                          <div className="sprite-preview-box small">
-                            <span
-                              className={`clawd-sprite clawd-sprite-${opt.key} clawd-gif-${idleBubbleGifClass[opt.key] ?? opt.key}`}
-                              style={{ transform: `scale(${36 / Math.max(opt.w, opt.h)})` }}
-                            />
-                          </div>
-                        )}
-                        <span>{opt.label}</span>
-                      </button>
-                    ))}
-                    <button className="clawd-idle-option reset" onClick={() => { setCompanionAnim(i, "random"); setOpenPicker(null); }}>
-                      重置为随机
-                    </button>
-                  </div>
-                )}
-              </div>
+            <div key={i} className="state-anim-col">
+              <span className="state-anim-col-label">{label}</span>
+              <button
+                className={`idle-sprite-preview ${isOpen ? "checked" : ""}`}
+                onClick={() => setOpenPicker(isOpen ? null : i)}
+              >
+                <div className="sprite-preview-box">
+                  {currentValue === "random" ? (
+                    <span style={{ fontSize: 18, fontWeight: 800, color: "var(--muted)" }}>?</span>
+                  ) : (
+                    <span
+                      className={`clawd-sprite clawd-sprite-${currentValue} clawd-gif-${idleBubbleGifClass[currentValue] ?? currentValue}`}
+                      style={{ transform: `scale(${72 / Math.max(168, 168)})` }}
+                    />
+                  )}
+                </div>
+              </button>
             </div>
           );
         })}
       </div>
+      {openPicker !== null && (
+        <div className="state-anim-picker">
+          <span className="state-anim-picker-title">
+            选择「{companionLabels[openPicker]}」的待机动画
+            <button className="state-anim-picker-close" onClick={() => setOpenPicker(null)}>×</button>
+          </span>
+          <div className="state-anim-picker-grid">
+            <button
+              className={`idle-sprite-preview ${companionAnimValues[openPicker] === "random" ? "checked" : ""}`}
+              onClick={() => { setCompanionAnim(openPicker, "random"); setOpenPicker(null); }}
+            >
+              <div className="sprite-preview-box">
+                <span style={{ fontSize: 22, fontWeight: 800, color: "var(--muted)" }}>?</span>
+              </div>
+              <span className="idle-sprite-label">随机</span>
+            </button>
+            {idleSpriteOptions.map(opt => (
+              <button
+                key={opt.key}
+                className={`idle-sprite-preview ${companionAnimValues[openPicker] === opt.key ? "checked" : ""}`}
+                onClick={() => { setCompanionAnim(openPicker, opt.key); setOpenPicker(null); }}
+              >
+                <div className="sprite-preview-box">
+                  <span
+                    className={`clawd-sprite clawd-sprite-${opt.key} clawd-gif-${idleBubbleGifClass[opt.key] ?? opt.key}`}
+                    style={{ transform: `scale(${72 / Math.max(opt.w, opt.h)})` }}
+                  />
+                </div>
+                <span className="idle-sprite-label">{opt.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
