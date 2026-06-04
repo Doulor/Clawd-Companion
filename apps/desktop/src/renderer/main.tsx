@@ -685,17 +685,26 @@ function PetApp() {
         {settings.showBubbles && toolStreams.length > 0 ? (
           <ToolStreams streams={toolStreams} offset={offsets.ribbon} />
         ) : null}
-        {settings.multiSessionEnabled && sessions.filter(s => (s.isActive || exitingSessions.has(s.sessionId)) && (exitingSessions.has(s.sessionId) || s.sessionId !== connection.activeSessionId)).slice(0, 3).map((session, i) => (
-          <CompanionClawd
-            key={session.sessionId}
-            session={session}
-            index={i}
-            settings={settings}
-            showTitle={settings.showSessionTitle}
-            exiting={exitingSessions.has(session.sessionId)}
-            mainClawdOffset={offsets.clawd ?? { x: 0, y: 0 }}
-          />
-        ))}
+        {(() => {
+          if (!settings.multiSessionEnabled) return null;
+          const companions = sessions.filter(s => (s.isActive || exitingSessions.has(s.sessionId)) && (exitingSessions.has(s.sessionId) || s.sessionId !== connection.activeSessionId)).slice(0, 3);
+          if (companions.length === 0) {
+            return <div style={{ position: "absolute", left: 10, top: 10, background: "red", color: "white", padding: "4px 8px", fontSize: 10, zIndex: 999, borderRadius: 4 }}>
+              无伴生 | 会话:{sessions.length} 活跃:{connection.activeSessionId?.slice(0, 6) ?? "无"} 启用:{String(settings.multiSessionEnabled)}
+            </div>;
+          }
+          return companions.map((session, i) => (
+            <CompanionClawd
+              key={session.sessionId}
+              session={session}
+              index={i}
+              settings={settings}
+              showTitle={settings.showSessionTitle}
+              exiting={exitingSessions.has(session.sessionId)}
+              mainClawdOffset={offsets.clawd ?? { x: 0, y: 0 }}
+            />
+          ));
+        })()}
       </section>
     </main>
   );
