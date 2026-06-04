@@ -903,33 +903,14 @@ ipcMain.handle("update:install", () => {
   if (!updateStatus.downloaded) {
     return { ok: false, error: "没有已下载的更新。" };
   }
-  logRuntime(`update:install called, downloadedInstallerPath = ${downloadedInstallerPath}`);
-  // 使用 powershell -Verb RunAs 自动请求管理员权限启动安装包
-  if (downloadedInstallerPath) {
-    const { exec } = require("node:child_process");
-    // 使用 cmd /c start 来处理路径中的空格和特殊字符
-    const cmd = `cmd /c start "" "${downloadedInstallerPath}"`;
-    logRuntime(`update:install executing: ${cmd}`);
-    exec(cmd, (error: Error | null) => {
-      if (error) {
-        logRuntime("update:install failed: " + error.message);
-      } else {
-        logRuntime("update:install: installer launched successfully");
-      }
-    });
-    setTimeout(() => app.quit(), 1500);
-    return { ok: true };
-  }
-  // fallback：尝试 electron-updater 标准方式
-  logRuntime("update:install: downloadedInstallerPath is undefined, trying quitAndInstall");
+  // 使用 electron-updater 标准方式重启安装
   try {
-    autoUpdater.quitAndInstall(false);
+    autoUpdater.quitAndInstall();
     return { ok: true };
   } catch (e) {
     logRuntime("update:install: quitAndInstall failed: " + e);
+    return { ok: false, error: "安装启动失败，请尝试手动下载。" };
   }
-  logRuntime("update:install failed - downloadedInstallerPath is undefined");
-  return { ok: false, error: "找不到已下载的安装包路径，请尝试手动下载。" };
 });
 ipcMain.handle("update:get-status", () => updateStatus);
 ipcMain.handle("app:get-version", () => app.getVersion());

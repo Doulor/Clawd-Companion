@@ -1249,9 +1249,11 @@ function SettingsApp() {
           {(updateStatus.available || updateStatus.downloading || updateStatus.downloaded) && (
             <button className="update-hint-btn" onClick={() => {
               const shell = document.querySelector('.settings-shell');
-              shell?.scrollTo({ top: shell.scrollHeight, behavior: 'smooth' });
+              if (shell) {
+                shell.scrollTo({ top: shell.scrollHeight, behavior: 'smooth' });
+              }
             }}>
-              ↓ 有新版本
+              发现新版本
             </button>
           )}
         </div>

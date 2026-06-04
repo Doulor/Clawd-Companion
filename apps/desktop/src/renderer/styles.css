@@ -1253,6 +1253,7 @@ input[type="range"]:focus { box-shadow: none; }
   cursor: pointer;
   animation: hint-pulse 2s ease-in-out infinite;
   margin-left: 8px;
+  -webkit-app-region: no-drag;
 }
 .update-hint-btn:hover {
   background: rgba(59, 130, 246, 0.2);
