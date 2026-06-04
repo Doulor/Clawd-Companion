@@ -1336,7 +1336,7 @@ input[type="range"]:focus { box-shadow: none; }
   bottom: 0;
   transform-origin: bottom center;
   pointer-events: none;
-  z-index: 5;
+  z-index: 9;
 }
 .companion-badge {
   position: absolute;

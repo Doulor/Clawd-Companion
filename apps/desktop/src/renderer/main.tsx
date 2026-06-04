@@ -141,6 +141,7 @@ function useCompanion() {
   const ribbonTimestamps = useRef<Map<string, number>>(new Map());
   const eventThrottleRef = useRef<{ timer: number | null; lastFlush: number }>({ timer: null, lastFlush: 0 });
   const pendingEventsRef = useRef<CompanionEvent[]>([]);
+  const companionSlotRef = useRef<Map<string, number>>(new Map());
 
   function scheduleStreamRemoval(eventId: string) {
     window.setTimeout(() => {
@@ -252,6 +253,7 @@ function useCompanion() {
       setSessions(Array.from(sessionsRef.current.values()));
 
       // 节流：100ms 内只刷新一次事件列表和 petState，减少高频事件时的渲染
+      // tool_end 不改变 petState —— 工具状态由 bubbleDuration 超时回退到 idle
       const now = Date.now();
       if (now - eventThrottleRef.current.lastFlush < 100) {
         pendingEventsRef.current.push(event);
@@ -261,17 +263,23 @@ function useCompanion() {
             pendingEventsRef.current = [];
             eventThrottleRef.current.timer = null;
             eventThrottleRef.current.lastFlush = Date.now();
-            const latest = pending[pending.length - 1];
             setEvents(previous => [...pending.reverse(), ...previous].slice(0, settings.eventHistoryLimit));
-            setPetState(stateFromEvent(latest));
-            setCurrentEvent(latest);
+            // pending 已被 reverse()（最新在前）
+            // 优先取 tool_start（工具动画优先级最高），否则取最近的非 tool_end 事件
+            const stateEvent = pending.find(e => e.event === "tool_start") ?? pending.find(e => e.event !== "tool_end");
+            if (stateEvent) {
+              setPetState(stateFromEvent(stateEvent));
+              setCurrentEvent(stateEvent);
+            }
           }, 100 - (now - eventThrottleRef.current.lastFlush));
         }
       } else {
         eventThrottleRef.current.lastFlush = now;
         setEvents(previous => [event, ...previous].slice(0, settings.eventHistoryLimit));
-        setPetState(stateFromEvent(event));
-        setCurrentEvent(event);
+        if (event.event !== "tool_end") {
+          setPetState(stateFromEvent(event));
+          setCurrentEvent(event);
+        }
       }
 
       // tool_end 处理：找到匹配的 tool_start 并标记退出
@@ -364,6 +372,38 @@ function useCompanion() {
     };
   }, [settings.bubbleDuration, settings.eventHistoryLimit, settings.toolStreamMinDuration]);
 
+  // 维护 mainSessionId：主会话退出时自动继任给下一个活跃会话，无活跃会话时置 null
+  useEffect(() => {
+    if (mainSessionId && !sessionsRef.current.has(mainSessionId)) {
+      const next = [...sessionsRef.current.values()].find(s => s.isActive && !exitingSessions.has(s.sessionId));
+      setMainSessionId(next?.sessionId ?? null);
+    }
+  }, [sessions, exitingSessions, mainSessionId]);
+
+  // 维护伴生 Clawd 的稳定 slot 分配，避免会话退出时 index 重排导致位置/动画跳变
+  useEffect(() => {
+    const companionIds = sessions
+      .filter(s => s.sessionId !== mainSessionId && (s.isActive || exitingSessions.has(s.sessionId)))
+      .slice(0, 3)
+      .map(s => s.sessionId);
+    // 清理已不存在的会话的 slot
+    for (const [sid] of companionSlotRef.current) {
+      if (!companionIds.includes(sid)) {
+        companionSlotRef.current.delete(sid);
+      }
+    }
+    // 为新会话分配最小可用 slot
+    const usedSlots = new Set(companionSlotRef.current.values());
+    for (const sid of companionIds) {
+      if (!companionSlotRef.current.has(sid)) {
+        let slot = 0;
+        while (usedSlots.has(slot)) slot++;
+        companionSlotRef.current.set(sid, slot);
+        usedSlots.add(slot);
+      }
+    }
+  }, [sessions, exitingSessions, mainSessionId]);
+
   async function updateSettings(next: Partial<CompanionSettings>) {
     const saved = await window.companion.saveSettings(next);
     setSettings(saved);
@@ -378,51 +418,48 @@ function useCompanion() {
     setActivePermissions(prev => prev.filter(p => p.id !== id));
   }
 
-  return { settings, updateSettings, connection, events, currentEvent, petState, toolStreams, activePermissions, sessions, exitingSessions, mainSessionId, respondToPermission };
+  return { settings, updateSettings, connection, events, currentEvent, petState, toolStreams, activePermissions, sessions, exitingSessions, mainSessionId, companionSlotRef, respondToPermission };
 }
 
 function PetApp() {
-  const { settings, updateSettings, currentEvent, petState, toolStreams, activePermissions, sessions, exitingSessions, mainSessionId, connection, respondToPermission } = useCompanion();
+  const { settings, updateSettings, currentEvent, petState, toolStreams, activePermissions, sessions, exitingSessions, mainSessionId, companionSlotRef, connection, respondToPermission } = useCompanion();
   const editMode = settings.editPosition;
   const dragging = useRef<string | null>(null);
   const dragStart = useRef<{ mx: number; my: number; ox: number; oy: number }>({ mx: 0, my: 0, ox: 0, oy: 0 });
   const offRef = useRef(settings.positionOffsets ?? {});
-  const [idleBubbleSprite, setIdleBubbleSprite] = useState<string | null>(null);
+  const [randomBubble, setRandomBubble] = useState<string | null>(null);
   const idleTimers = useRef<number[]>([]);
 
   // 响应测试按钮
   useEffect(() => {
     const off = window.companion.onTriggerIdleBubble(() => {
-      setIdleBubbleSprite("idle");
-      setTimeout(() => setIdleBubbleSprite(null), 2500);
+      setRandomBubble("idle");
+      setTimeout(() => setRandomBubble(null), 2500);
     });
     return () => off();
   }, []);
 
-  // 待机动画（主 Clawd）
+  // 同步计算有效待机气泡（渲染时直接计算，避免 useEffect 时序问题）
+  const mainIdle = (settings as any).mainClawdIdleAnimation ?? "random";
+  // 只检查非退出中的活跃会话，避免 exitingSessions 残留导致 hasActiveSession 误判
+  const hasActiveSession = sessions.some(s => s.isActive && !exitingSessions.has(s.sessionId));
+  const isToolState = petState.startsWith("tool_") || petState === "waiting_permission";
+  const isTerminalState = petState === "done" || petState === "error";
+
+  let effectiveIdleBubble: string | null = null;
+  if (!isToolState && !isTerminalState && !editMode) {
+    if (mainIdle !== "random" && hasActiveSession) {
+      effectiveIdleBubble = mainIdle;
+    } else if (settings.idleAnim?.enabled && petState === "idle") {
+      effectiveIdleBubble = randomBubble;
+    }
+  }
+
+  // 随机动画定时器（仅管理随机模式的定时播放）
   useEffect(() => {
     const cfg = settings.idleAnim;
-    const mainIdle = (settings as any).mainClawdIdleAnimation ?? "random";
-    const hasActiveSession = sessions.some(s => s.isActive);
-    // 固定动画模式：仅在有会话且无工具调用时播放指定的 GIF
-    const isToolState = petState.startsWith("tool_") || petState === "waiting_permission";
-
-    if (isToolState) {
-      // 工具调用中 → 清除固定动画，让 ClawdSprite 根据 petState 显示工具动画
-      setIdleBubbleSprite(null);
-      idleTimers.current.forEach(clearTimeout);
-      idleTimers.current = [];
-      return;
-    }
-    if (mainIdle !== "random" && hasActiveSession && !editMode) {
-      setIdleBubbleSprite(mainIdle);
-      idleTimers.current.forEach(clearTimeout);
-      idleTimers.current = [];
-      return;
-    }
-    // 随机动画模式：仅在 idle 状态且启用时播放
-    if (!cfg?.enabled || petState !== "idle" || editMode) {
-      setIdleBubbleSprite(null);
+    if (!cfg?.enabled || petState !== "idle" || editMode || mainIdle !== "random") {
+      setRandomBubble(null);
       idleTimers.current.forEach(clearTimeout);
       idleTimers.current = [];
       return;
@@ -434,9 +471,9 @@ function PetApp() {
       const repeats = cfg!.repeatMin + (range > 0 ? Math.floor(Math.random() * (range + 1)) : 0);
       let count = 0;
       function show() {
-        setIdleBubbleSprite(sprite);
+        setRandomBubble(sprite);
         const t = window.setTimeout(() => {
-          setIdleBubbleSprite(null);
+          setRandomBubble(null);
           count++;
           if (count < repeats) {
             idleTimers.current = [window.setTimeout(show, 1500)];
@@ -456,12 +493,12 @@ function PetApp() {
     }
     scheduleNext();
     return () => { idleTimers.current.forEach(clearTimeout); idleTimers.current = []; };
-  }, [petState, editMode, settings.idleAnim, (settings as any).mainClawdIdleAnimation, sessions]);
+  }, [petState, editMode, settings.idleAnim, mainIdle]);
 
-  // 同步 idleBubbleSprite 到设置面板
+  // 同步 effectiveIdleBubble 到设置面板
   useEffect(() => {
-    void window.companion.syncIdleBubble(idleBubbleSprite);
-  }, [idleBubbleSprite]);
+    void window.companion.syncIdleBubble(effectiveIdleBubble);
+  }, [effectiveIdleBubble]);
 
   useEffect(() => {
     if (editMode) {
@@ -631,7 +668,7 @@ function PetApp() {
               </div>
             ) : null}
             <div className={`clawd clawd-${previewState}`} style={{ transform: `translate(${offsets.clawd?.x ?? 0}px, ${offsets.clawd?.y ?? 0}px) scale(${settings.clawdScale})`, opacity: settings.clawdOpacity }}>
-              <ClawdSprite state={previewState} idleBubble={idleBubbleSprite} eventType={previewEvent.event} stateAnimations={settings.stateAnimations} />
+              <ClawdSprite state={previewState} idleBubble={effectiveIdleBubble} eventType={previewEvent.event} stateAnimations={settings.stateAnimations} />
               {settings.showStatusProp && previewState !== "idle" ? <StateProp state={previewState} /> : null}
             </div>
             {settings.showBubbles ? (
@@ -733,7 +770,7 @@ function PetApp() {
           </div>
         ) : null}
         <div className={`clawd clawd-${petState}`} style={{ transform: `translate(${offsets.clawd?.x ?? 0}px, ${offsets.clawd?.y ?? 0}px) scale(${settings.clawdScale})`, opacity: settings.clawdOpacity }}>
-          <ClawdSprite state={petState} idleBubble={idleBubbleSprite} eventType={currentEvent?.event} stateAnimations={settings.stateAnimations} />
+          <ClawdSprite state={petState} idleBubble={effectiveIdleBubble} eventType={currentEvent?.event} stateAnimations={settings.stateAnimations} />
           {settings.showStatusProp && petState !== "idle" ? <StateProp state={petState} /> : null}
         </div>
         {settings.showBubbles && toolStreams.length > 0 ? (
@@ -742,13 +779,12 @@ function PetApp() {
 
         {settings.multiSessionEnabled && mainSessionId && sessions
             .filter(s => s.sessionId !== mainSessionId && (s.isActive || exitingSessions.has(s.sessionId)))
-            .slice(0, 3).map((session, i) => (
+            .slice(0, 3).map((session) => (
             <CompanionClawd
               key={session.sessionId}
               session={session}
-              index={i}
+              index={companionSlotRef.current.get(session.sessionId) ?? 0}
               settings={settings}
-              showTitle={settings.showSessionTitle}
               exiting={exitingSessions.has(session.sessionId)}
               mainClawdOffset={offsets.clawd ?? { x: 0, y: 0 }}
             />
@@ -967,7 +1003,7 @@ function ClawdSprite({ state, idleBubble, eventType, stateAnimations }: { state:
   return <span className={`clawd-sprite clawd-sprite-${spriteState} clawd-gif-${clawdGifName[state]}`} aria-hidden="true" />;
 }
 
-function CompanionClawd({ session, index, settings, showTitle, exiting, mainClawdOffset }: { session: CompanionSession; index: number; settings: CompanionSettings; showTitle: boolean; exiting?: boolean; mainClawdOffset: { x: number; y: number } }) {
+function CompanionClawd({ session, index, settings, exiting, mainClawdOffset }: { session: CompanionSession; index: number; settings: CompanionSettings; exiting?: boolean; mainClawdOffset: { x: number; y: number } }) {
   const scale = settings.companionScale ?? 0.6;
   const offsets = settings.positionOffsets ?? {};
   const off = (offsets as any)[`companion${index}`] ?? { x: 80 + index * 100, y: -120 - index * 80 };
@@ -978,8 +1014,41 @@ function CompanionClawd({ session, index, settings, showTitle, exiting, mainClaw
 
   // 工作时自定义待机动画逻辑
   const isIdleInSession = session.state === "thinking" || session.state === "idle";
-  const idleAnim = settings.companionIdleAnimations?.[index] ?? "thinking";
-  const displayState = isIdleInSession && idleAnim ? (idleAnim as PetState) : session.state;
+  const configuredIdleAnim = settings.companionIdleAnimations?.[index] ?? "thinking";
+
+  // 处理 "random"：从动画池中随机选取精灵，循环播放
+  const [randomSprite, setRandomSprite] = useState<string | null>(null);
+  const randomTimerRef = useRef<number>(0);
+
+  useEffect(() => {
+    if (configuredIdleAnim !== "random" || !isIdleInSession) {
+      setRandomSprite(null);
+      clearTimeout(randomTimerRef.current);
+      return;
+    }
+    const pool = settings.idleAnim?.selectedSprites?.length ? settings.idleAnim.selectedSprites : ["idle"];
+    let cancelled = false;
+    function next() {
+      if (cancelled) return;
+      const sprite = pool[Math.floor(Math.random() * pool.length)];
+      setRandomSprite(sprite);
+      const min = (settings.idleAnim?.intervalMin ?? 15) * 1000;
+      const max = (settings.idleAnim?.intervalMax ?? 40) * 1000;
+      randomTimerRef.current = window.setTimeout(next, min + Math.random() * (max - min));
+    }
+    next();
+    return () => { cancelled = true; clearTimeout(randomTimerRef.current); };
+  }, [configuredIdleAnim, isIdleInSession, settings.idleAnim]);
+
+  // 确定最终显示的 idleBubble：优先走 idleBubble 路径（与主 Clawd 一致，ClawdSprite 通过 idleBubbleGifClass 正确解析）
+  let effectiveIdleBubble: string | null = null;
+  if (isIdleInSession && configuredIdleAnim) {
+    if (configuredIdleAnim === "random") {
+      effectiveIdleBubble = randomSprite; // null 期间 fallback 到 session.state
+    } else {
+      effectiveIdleBubble = configuredIdleAnim;
+    }
+  }
 
   return (
     <div
@@ -987,16 +1056,10 @@ function CompanionClawd({ session, index, settings, showTitle, exiting, mainClaw
       style={{
         transform: `translate(${baseX}px, ${baseY}px) scale(${scale})`,
         opacity: exiting ? 0 : mounted ? 1 : 0,
-        transition: "opacity 0.5s ease-out, transform 0.3s ease-out"
+        transition: "opacity 0.3s ease-out"
       }}
     >
-      {showTitle && (
-        <div className="companion-badge">
-          <span className={`companion-status-dot companion-status-${session.state}`} />
-          <span className="companion-title-text">{session.title || session.sessionId.slice(0, 8)}</span>
-        </div>
-      )}
-      <ClawdSprite state={displayState} stateAnimations={settings.stateAnimations} />
+      <ClawdSprite state={session.state} idleBubble={effectiveIdleBubble} stateAnimations={settings.stateAnimations} />
     </div>
   );
 }
@@ -1243,10 +1306,7 @@ function SettingsApp() {
           <h3 className="panel-subtitle">多会话模式</h3>
           <Toggle label="启用多会话" checked={settings.multiSessionEnabled} onChange={multiSessionEnabled => updateSettings({ multiSessionEnabled })} />
           {settings.multiSessionEnabled && (
-            <>
-              <Toggle label="显示会话标题" checked={settings.showSessionTitle} onChange={showSessionTitle => updateSettings({ showSessionTitle })} />
               <Slider label="小 Clawd 缩放" min={0.3} max={0.8} step={0.05} value={settings.companionScale} format={value => `${Math.round(value * 100)}%`} onChange={companionScale => updateSettings({ companionScale })} />
-            </>
           )}
         </Panel>
 
