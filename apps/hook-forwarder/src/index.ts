@@ -4,7 +4,7 @@ import { request, type IncomingMessage } from "node:http";
 import { randomUUID } from "node:crypto";
 
 type HookPayload = Record<string, unknown>;
-type ToolName = "Read" | "Edit" | "Write" | "Bash" | "Grep" | "Glob" | "WebFetch" | "WebSearch" | "Notebook" | "Agent" | "Skill" | "Task" | "MCP" | "Unknown";
+type ToolName = "Read" | "Edit" | "Write" | "Bash" | "Grep" | "Glob" | "WebFetch" | "WebSearch" | "Notebook" | "Agent" | "Skill" | "Task" | "AskUserQuestion" | "MCP" | "Unknown";
 type EventType = "session_start" | "prompt_submit" | "tool_start" | "tool_end" | "notification" | "permission_wait" | "done" | "error";
 type ClientType = "cli" | "desktop" | "vscode" | "unknown";
 
@@ -78,7 +78,8 @@ function toolName(payload: HookPayload): ToolName {
   const KNOWN_TOOLS = [
     "Read", "Edit", "Write", "Bash", "Grep", "Glob", "WebFetch",
     "WebSearch", "Notebook", "Agent", "Skill",
-    "TaskCreate", "TaskUpdate", "Task"
+    "TaskCreate", "TaskUpdate", "Task",
+    "AskUserQuestion" // Claude Code 桌面端选择选项
   ];
   if (KNOWN_TOOLS.includes(raw)) {
     if (raw === "TaskCreate" || raw === "TaskUpdate") return "Task";
@@ -112,6 +113,10 @@ function detailForTool(payload: HookPayload, tool: ToolName): string | undefined
     return prompt ? (prompt.length > 40 ? prompt.slice(0, 37) + "..." : prompt) : undefined;
   }
   if (tool === "Skill") return text(input.skill) ?? text(input.name);
+  if (tool === "AskUserQuestion") {
+    const question = text(input.question) ?? text(input.prompt);
+    return question ? (question.length > 40 ? question.slice(0, 37) + "..." : question) : undefined;
+  }
   if (tool === "MCP") {
     const raw = text(payload.tool_name) ?? "";
     const parts = raw.split("__");
@@ -190,6 +195,7 @@ function titleForTool(tool: ToolName): string {
   if (tool === "WebSearch") return "正在搜索网络";
   if (tool === "Agent") return "正在调用子代理";
   if (tool === "Skill") return "正在使用技能";
+  if (tool === "AskUserQuestion") return "等待选择";
   if (tool === "MCP") return "正在使用 MCP 工具";
   return "正在使用工具";
 }

@@ -41,6 +41,9 @@ export type ToolName =
   | "Agent"
   | "Skill"
   | "Task"
+  | "TaskCreate"
+  | "TaskUpdate"
+  | "AskUserQuestion"
   | "MCP"
   | "Unknown";
 
@@ -63,6 +66,9 @@ export type PetState =
   | "tool_bash"
   | "tool_search"
   | "tool_mcp"
+  | "skill"
+  | "task"
+  | "agent"
   | "waiting_permission"
   | "done"
   | "error";
@@ -261,11 +267,16 @@ export const defaultSettings: CompanionSettings = {
   zoneSizes: {},
   idleAnim: {
     enabled: true,
-    selectedSprites: ["idle", "thinking", "tool_read", "tool_edit", "waiting_permission", "done", "error"],
+    selectedSprites: ["idle", "thinking", "tool_read", "tool_edit", "waiting_permission", "done", "error", "skill", "agent"],
     intervalMin: 15,
     intervalMax: 40,
     repeatMin: 2,
     repeatMax: 3
+  },
+  stateAnimations: {
+    skill: "skill",
+    task: "task",
+    agent: "agent"
   }
 };
 
@@ -280,7 +291,9 @@ export function stateFromEvent(event: CompanionEvent): PetState {
     if (event.tool === "Bash") return "tool_bash";
     if (event.tool === "Grep" || event.tool === "Glob" || event.tool === "WebFetch" || event.tool === "WebSearch") return "tool_search";
     if (event.tool === "MCP") return "tool_mcp";
-    if (event.tool === "Agent" || event.tool === "Skill") return "thinking";
+    if (event.tool === "Skill") return "skill";
+    if (event.tool === "Task" || event.tool === "TaskCreate" || event.tool === "TaskUpdate") return "task";
+    if (event.tool === "Agent") return "agent";
     return "thinking";
   }
   if (event.event === "notification") return "waiting_permission";

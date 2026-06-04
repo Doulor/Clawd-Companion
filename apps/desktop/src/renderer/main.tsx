@@ -38,6 +38,9 @@ const clawdGifName: Record<PetState, string> = {
   tool_bash: "headset_focus",
   tool_search: "thinking_speech",
   tool_mcp: "thinking_speech",
+  skill: "idea_bulb",
+  task: "idea_bulb",
+  agent: "welding_work",
   waiting_permission: "permission_prompt",
   done: "celebrate_bunny",
   error: "error_dead"
@@ -51,6 +54,9 @@ const stateCopy: Record<PetState, { label: string; line: string; tone: string }>
   tool_bash: { label: "终端", line: "正在执行命令", tone: "ink" },
   tool_search: { label: "搜索", line: "正在检索线索", tone: "blue" },
   tool_mcp: { label: "MCP", line: "正在调用 MCP 工具", tone: "blue" },
+  skill: { label: "技能", line: "正在使用技能", tone: "honey" },
+  task: { label: "任务", line: "正在处理任务", tone: "steel" },
+  agent: { label: "子代理", line: "正在调用子代理", tone: "steel" },
   waiting_permission: { label: "等待确认", line: "需要你处理一个确认", tone: "honey" },
   done: { label: "完成", line: "这一轮已经处理完", tone: "green" },
   error: { label: "出错", line: "刚才有一步失败了", tone: "coral" }
@@ -76,6 +82,9 @@ const stateFeedbackMode: Record<PetState, FeedbackMode> = {
   tool_bash: "thought",
   tool_search: "thought",
   tool_mcp: "thought",
+  skill: "thought",
+  task: "thought",
+  agent: "thought",
   waiting_permission: "card",
   done: "card",
   error: "card"
@@ -94,7 +103,10 @@ const mappingRows: Array<{ source: string; tool?: string; state: PetState; title
   { source: "PreToolUse", tool: "Bash", state: "tool_bash", title: "执行命令" },
   { source: "PreToolUse", tool: "Grep / Glob / WebFetch / WebSearch", state: "tool_search", title: "搜索资料" },
   { source: "PreToolUse", tool: "MCP", state: "tool_mcp", title: "MCP 工具" },
-  { source: "PreToolUse", tool: "Agent / Skill", state: "thinking", title: "子代理 / 技能" },
+  { source: "PreToolUse", tool: "Skill", state: "skill", title: "技能调用" },
+  { source: "PreToolUse", tool: "Task", state: "task", title: "任务处理" },
+  { source: "PreToolUse", tool: "Agent", state: "agent", title: "子代理调用" },
+  { source: "PreToolUse", tool: "AskUserQuestion", state: "thinking", title: "等待选择" },
   { source: "Notification", state: "waiting_permission", title: "等待确认" },
   { source: "Stop", state: "done", title: "处理完成" },
   { source: "转发失败", state: "error", title: "异常提示" }
@@ -212,11 +224,19 @@ function useCompanion() {
         };
         sessionsRef.current.set(sid, session);
         setSessions(Array.from(sessionsRef.current.values()));
+        // 会话复活：之前处于退出状态但新事件使会话重新活跃，立即移出 exitingSessions
+        if (!wasActive && !isDone) {
+          setExitingSessions(prev => { const next = new Set(prev); next.delete(sid); return next; });
+        }
         if (wasActive && isDone) {
           setExitingSessions(prev => new Set(prev).add(sid));
+          const exitId = sid;
           setTimeout(() => {
-            setExitingSessions(prev => { const next = new Set(prev); next.delete(sid); return next; });
-            sessionsRef.current.delete(sid);
+            // 检查会话是否已被后续事件复活，如是则跳过清理
+            const revived = sessionsRef.current.get(exitId);
+            if (revived?.isActive) return;
+            setExitingSessions(prev => { const next = new Set(prev); next.delete(exitId); return next; });
+            sessionsRef.current.delete(exitId);
             setSessions(Array.from(sessionsRef.current.values()));
           }, 700);
         }
@@ -228,6 +248,8 @@ function useCompanion() {
             setExitingSessions(prev => new Set(prev).add(id));
             const exitId = id;
             setTimeout(() => {
+              const revived = sessionsRef.current.get(exitId);
+              if (revived?.isActive) return;
               setExitingSessions(prev => { const next = new Set(prev); next.delete(exitId); return next; });
               sessionsRef.current.delete(exitId);
               setSessions(Array.from(sessionsRef.current.values()));
@@ -237,13 +259,15 @@ function useCompanion() {
         setSessions(Array.from(sessionsRef.current.values()));
       }
 
-      // 超时检测：超过 10 秒没收到事件的会话自动标记为退出
+      // 单会话空闲检测：伴生会话超过 60 秒无事件则渐出消失，主会话不受影响
       for (const [id, s] of sessionsRef.current) {
-        if (s.isActive && Date.now() - s.lastEventTime > 10_000 && !exitingSessions.has(id)) {
+        if (id !== mainSessionId && s.isActive && Date.now() - s.lastEventTime > 60_000 && !exitingSessions.has(id)) {
           sessionsRef.current.set(id, { ...s, isActive: false });
           setExitingSessions(prev => new Set(prev).add(id));
           const exitId = id;
           setTimeout(() => {
+            const revived = sessionsRef.current.get(exitId);
+            if (revived?.isActive) return;
             setExitingSessions(prev => { const next = new Set(prev); next.delete(exitId); return next; });
             sessionsRef.current.delete(exitId);
             setSessions(Array.from(sessionsRef.current.values()));
@@ -251,6 +275,17 @@ function useCompanion() {
         }
       }
       setSessions(Array.from(sessionsRef.current.values()));
+      let silentCleanup = false;
+      for (const [id, s] of sessionsRef.current) {
+        if (Date.now() - s.lastEventTime > 300_000) {
+          sessionsRef.current.delete(id);
+          setExitingSessions(prev => { const next = new Set(prev); next.delete(id); return next; });
+          silentCleanup = true;
+        }
+      }
+      if (silentCleanup) {
+        setSessions(Array.from(sessionsRef.current.values()));
+      }
 
       // 节流：100ms 内只刷新一次事件列表和 petState，减少高频事件时的渲染
       // tool_end 不改变 petState —— 工具状态由 bubbleDuration 超时回退到 idle
@@ -372,11 +407,13 @@ function useCompanion() {
     };
   }, [settings.bubbleDuration, settings.eventHistoryLimit, settings.toolStreamMinDuration]);
 
-  // 维护 mainSessionId：主会话退出时自动继任给下一个活跃会话，无活跃会话时置 null
+  // 维护 mainSessionId：主会话退出时仅在所有会话都消失后才置 null
+  // 不做自动升级（避免伴生 Clawd 无动画消失），伴生会话保持在自己的位置
   useEffect(() => {
     if (mainSessionId && !sessionsRef.current.has(mainSessionId)) {
-      const next = [...sessionsRef.current.values()].find(s => s.isActive && !exitingSessions.has(s.sessionId));
-      setMainSessionId(next?.sessionId ?? null);
+      if (sessionsRef.current.size === 0) {
+        setMainSessionId(null);
+      }
     }
   }, [sessions, exitingSessions, mainSessionId]);
 
@@ -668,7 +705,7 @@ function PetApp() {
               </div>
             ) : null}
             <div className={`clawd clawd-${previewState}`} style={{ transform: `translate(${offsets.clawd?.x ?? 0}px, ${offsets.clawd?.y ?? 0}px) scale(${settings.clawdScale})`, opacity: settings.clawdOpacity }}>
-              <ClawdSprite state={previewState} idleBubble={effectiveIdleBubble} eventType={previewEvent.event} stateAnimations={settings.stateAnimations} />
+              <ClawdSprite state={previewState} idleBubble={effectiveIdleBubble} eventType={previewEvent.event} tool={previewEvent.tool} stateAnimations={settings.stateAnimations} />
               {settings.showStatusProp && previewState !== "idle" ? <StateProp state={previewState} /> : null}
             </div>
             {settings.showBubbles ? (
@@ -770,7 +807,7 @@ function PetApp() {
           </div>
         ) : null}
         <div className={`clawd clawd-${petState}`} style={{ transform: `translate(${offsets.clawd?.x ?? 0}px, ${offsets.clawd?.y ?? 0}px) scale(${settings.clawdScale})`, opacity: settings.clawdOpacity }}>
-          <ClawdSprite state={petState} idleBubble={effectiveIdleBubble} eventType={currentEvent?.event} stateAnimations={settings.stateAnimations} />
+          <ClawdSprite state={petState} idleBubble={effectiveIdleBubble} eventType={currentEvent?.event} tool={currentEvent?.tool} stateAnimations={settings.stateAnimations} />
           {settings.showStatusProp && petState !== "idle" ? <StateProp state={petState} /> : null}
         </div>
         {settings.showBubbles && toolStreams.length > 0 ? (
@@ -886,6 +923,7 @@ const toolColorMap: Record<string, string> = {
   Agent: "steel",
   Skill: "honey",
   Task: "steel",
+  AskUserQuestion: "honey",
   MCP: "purple",
   Unknown: "steel"
 };
@@ -903,6 +941,7 @@ const toolIconMap: Record<string, string> = {
   Agent: "A",
   Skill: "K",
   Task: "T",
+  AskUserQuestion: "?",
   MCP: "M",
   Unknown: "?"
 };
@@ -961,7 +1000,10 @@ const idleBubbleGifClass: Record<string, string> = {
   tool_edit: "working_hardhat",
   waiting_permission: "permission_prompt",
   done: "celebrate_bunny",
-  error: "error_dead"
+  error: "error_dead",
+  skill: "idea_bulb",
+  task: "idea_bulb",
+  agent: "welding_work"
 };
 
 const eventSpriteOverride: Partial<Record<CompanionEvent["event"], { sprite: string; gif: string }>> = {
@@ -969,7 +1011,14 @@ const eventSpriteOverride: Partial<Record<CompanionEvent["event"], { sprite: str
   prompt_submit: { sprite: "done", gif: "celebrate_bunny" }
 };
 
-function ClawdSprite({ state, idleBubble, eventType, stateAnimations }: { state: PetState; idleBubble?: string | null; eventType?: CompanionEvent["event"]; stateAnimations?: Record<string, string> }) {
+// 工具到 GIF 动画的映射
+const toolGifMap: Record<string, string> = {
+  Skill: "idea_bulb",
+  Task: "idea_bulb",
+  Agent: "welding_work"
+};
+
+function ClawdSprite({ state, idleBubble, eventType, tool, stateAnimations }: { state: PetState; idleBubble?: string | null; eventType?: CompanionEvent["event"]; tool?: string; stateAnimations?: Record<string, string> }) {
   if (idleBubble) {
     const gifClass = idleBubbleGifClass[idleBubble] ?? idleBubble;
     return (
@@ -998,6 +1047,12 @@ function ClawdSprite({ state, idleBubble, eventType, stateAnimations }: { state:
   const override = eventType ? eventSpriteOverride[eventType] : undefined;
   if (override) {
     return <span className={`clawd-sprite clawd-sprite-${override.sprite} clawd-gif-${override.gif}`} aria-hidden="true" />;
+  }
+  // 检查工具特定的 GIF 映射
+  if (tool && toolGifMap[tool]) {
+    const gifClass = toolGifMap[tool];
+    const spriteState = state === "tool_mcp" ? "thinking" : state === "tool_read" ? "thinking" : state === "tool_bash" ? "tool_read" : state;
+    return <span className={`clawd-sprite clawd-sprite-${spriteState} clawd-gif-${gifClass}`} aria-hidden="true" />;
   }
   const spriteState = state === "tool_mcp" ? "thinking" : state === "tool_read" ? "thinking" : state === "tool_bash" ? "tool_read" : state;
   return <span className={`clawd-sprite clawd-sprite-${spriteState} clawd-gif-${clawdGifName[state]}`} aria-hidden="true" />;
@@ -1059,7 +1114,7 @@ function CompanionClawd({ session, index, settings, exiting, mainClawdOffset }: 
         transition: "opacity 0.3s ease-out"
       }}
     >
-      <ClawdSprite state={session.state} idleBubble={effectiveIdleBubble} stateAnimations={settings.stateAnimations} />
+      <ClawdSprite state={session.state} idleBubble={effectiveIdleBubble} tool={session.lastEvent?.tool} stateAnimations={settings.stateAnimations} />
     </div>
   );
 }
@@ -1682,7 +1737,9 @@ const idleSpriteOptions: Array<{ key: string; label: string; w: number; h: numbe
   { key: "tool_edit", label: "working_hardhat", w: 168, h: 133 },
   { key: "waiting_permission", label: "permission_prompt", w: 168, h: 100 },
   { key: "done", label: "celebrate_bunny", w: 168, h: 208 },
-  { key: "error", label: "error_dead", w: 168, h: 182 }
+  { key: "error", label: "error_dead", w: 168, h: 182 },
+  { key: "skill", label: "idea_bulb", w: 480, h: 480 },
+  { key: "agent", label: "welding_work", w: 480, h: 480 }
 ];
 
 function IdleAnimSettings({ config, onChange, settings, updateSettings }: { config: IdleAnimConfig; onChange: (cfg: IdleAnimConfig) => void; settings: CompanionSettings; updateSettings: (s: Partial<CompanionSettings>) => void }) {
@@ -1836,6 +1893,10 @@ const stateAnimEntries: Array<{ state: PetState; label: string; defaultSprite: s
   { state: "tool_edit", label: "编辑文件", defaultSprite: "tool_edit" },
   { state: "tool_bash", label: "执行命令", defaultSprite: "tool_read" },
   { state: "tool_search", label: "搜索资料", defaultSprite: "thinking" },
+  { state: "tool_mcp", label: "MCP 工具", defaultSprite: "thinking" },
+  { state: "skill", label: "技能", defaultSprite: "skill" },
+  { state: "task", label: "任务", defaultSprite: "task" },
+  { state: "agent", label: "子代理", defaultSprite: "agent" },
   { state: "waiting_permission", label: "等待确认", defaultSprite: "waiting_permission" },
   { state: "done", label: "处理完成", defaultSprite: "done" },
   { state: "error", label: "错误", defaultSprite: "error" }
@@ -1863,6 +1924,9 @@ function StateAnimSettings({ stateAnimations, onChange }: { stateAnimations: Rec
         {stateAnimEntries.map(entry => {
           const currentSprite = stateAnimations[entry.state] ?? entry.defaultSprite;
           const isOpen = openKey === entry.state;
+          const opt = idleSpriteOptions.find(o => o.key === currentSprite);
+          const spriteW = opt?.w ?? 168;
+          const spriteH = opt?.h ?? 168;
           return (
             <div key={entry.state} className="state-anim-col">
               <span className="state-anim-col-label">{entry.label}</span>
@@ -1873,7 +1937,7 @@ function StateAnimSettings({ stateAnimations, onChange }: { stateAnimations: Rec
                 <div className="sprite-preview-box">
                   <span
                     className={`clawd-sprite clawd-sprite-${currentSprite} clawd-gif-${idleBubbleGifClass[currentSprite] ?? currentSprite}`}
-                    style={{ transform: `scale(${72 / Math.max(168, 168)})` }}
+                    style={{ transform: `scale(${72 / Math.max(spriteW, spriteH)})` }}
                   />
                 </div>
               </button>

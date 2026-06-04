@@ -225,3 +225,111 @@
   71.4286% { background-position: -504px 0px; }
 }
 
+/* skill: reuse thinking sprite */
+.clawd-sprite-skill {
+  width: 168px;
+  height: 209px;
+  background-image: url("./thinking.png");
+  background-size: 1344px 418px;
+  animation: clawd-sprite-skill 2500ms step-end infinite;
+}
+@keyframes clawd-sprite-skill {
+  0.0000% { background-position: 0px 0px; }
+  4.0000% { background-position: -168px 0px; }
+  12.0000% { background-position: -336px 0px; }
+  20.0000% { background-position: -504px 0px; }
+  28.0000% { background-position: -672px 0px; }
+  36.0000% { background-position: -840px 0px; }
+  44.0000% { background-position: -1008px 0px; }
+  52.0000% { background-position: -1176px 0px; }
+  60.0000% { background-position: 0px -209px; }
+  68.0000% { background-position: -168px -209px; }
+  76.0000% { background-position: -336px -209px; }
+  84.0000% { background-position: -504px -209px; }
+  92.0000% { background-position: -672px -209px; }
+}
+
+/* task: reuse thinking sprite */
+.clawd-sprite-task {
+  width: 168px;
+  height: 209px;
+  background-image: url("./thinking.png");
+  background-size: 1344px 418px;
+  animation: clawd-sprite-task 2500ms step-end infinite;
+}
+@keyframes clawd-sprite-task {
+  0.0000% { background-position: 0px 0px; }
+  4.0000% { background-position: -168px 0px; }
+  12.0000% { background-position: -336px 0px; }
+  20.0000% { background-position: -504px 0px; }
+  28.0000% { background-position: -672px 0px; }
+  36.0000% { background-position: -840px 0px; }
+  44.0000% { background-position: -1008px 0px; }
+  52.0000% { background-position: -1176px 0px; }
+  60.0000% { background-position: 0px -209px; }
+  68.0000% { background-position: -168px -209px; }
+  76.0000% { background-position: -336px -209px; }
+  84.0000% { background-position: -504px -209px; }
+  92.0000% { background-position: -672px -209px; }
+}
+
+/* agent: reuse thinking sprite */
+.clawd-sprite-agent {
+  width: 168px;
+  height: 209px;
+  background-image: url("./thinking.png");
+  background-size: 1344px 418px;
+  animation: clawd-sprite-agent 2500ms step-end infinite;
+}
+@keyframes clawd-sprite-agent {
+  0.0000% { background-position: 0px 0px; }
+  4.0000% { background-position: -168px 0px; }
+  12.0000% { background-position: -336px 0px; }
+  20.0000% { background-position: -504px 0px; }
+  28.0000% { background-position: -672px 0px; }
+  36.0000% { background-position: -840px 0px; }
+  44.0000% { background-position: -1008px 0px; }
+  52.0000% { background-position: -1176px 0px; }
+  60.0000% { background-position: 0px -209px; }
+  68.0000% { background-position: -168px -209px; }
+  76.0000% { background-position: -336px -209px; }
+  84.0000% { background-position: -504px -209px; }
+  92.0000% { background-position: -672px -209px; }
+}
+
+/* idea_bulb: lightbulb moment */
+.clawd-sprite-skill {
+  width: 480px;
+  height: 480px;
+  background-image: url("./idea_bulb.png");
+  background-size: 2880px 480px;
+  animation: clawd-sprite-skill 1500ms step-end infinite;
+}
+@keyframes clawd-sprite-skill {
+  0.0000% { background-position: 0px 0px; }
+  16.6667% { background-position: -480px 0px; }
+  33.3333% { background-position: -960px 0px; }
+  50.0000% { background-position: -1440px 0px; }
+  66.6667% { background-position: -1920px 0px; }
+  83.3333% { background-position: -2400px 0px; }
+}
+
+/* welding_work: welding animation */
+.clawd-sprite-agent {
+  width: 480px;
+  height: 480px;
+  background-image: url("./welding_work.png");
+  background-size: 3840px 480px;
+  animation: clawd-sprite-agent 2000ms step-end infinite;
+}
+@keyframes clawd-sprite-agent {
+  0.0000% { background-position: 0px 0px; }
+  12.5000% { background-position: -480px 0px; }
+  25.0000% { background-position: -960px 0px; }
+  37.5000% { background-position: -1440px 0px; }
+  50.0000% { background-position: -1920px 0px; }
+  62.5000% { background-position: -2400px 0px; }
+  75.0000% { background-position: -2880px 0px; }
+  87.5000% { background-position: -3360px 0px; }
+}
+
