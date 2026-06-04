@@ -108,7 +108,7 @@ declare global {
       onPermissionResolved: (callback: (result: { id: string; status: string }) => void) => () => void;
       respondPermission: (response: PermissionResponse) => Promise<{ success: boolean }>;
       checkForUpdates: () => Promise<{ ok: boolean; error?: string }>;
-      installUpdate: () => Promise<void>;
+      installUpdate: () => Promise<{ ok: boolean; error?: string }>;
       getUpdateStatus: () => Promise<UpdateStatus>;
       getAppVersion: () => Promise<string>;
       triggerIdleBubble: () => Promise<void>;

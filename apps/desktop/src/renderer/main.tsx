@@ -1560,7 +1560,12 @@ function SettingsApp() {
           ) : updateStatus.available ? (
             <span className="update-available">发现新版本 v{updateStatus.version}，正在下载...</span>
           ) : updateStatus.upToDate ? (
-            <span className="update-uptodate"><Check size={14} />已是最新版本</span>
+            <span className="update-uptodate">
+              <Check size={14} />已是最新版本
+              <button className="update-refresh-btn" onClick={handleCheckUpdate} disabled={checkingUpdate} title="手动检查更新">
+                ↻
+              </button>
+            </span>
           ) : (
             <button className="update-btn" onClick={handleCheckUpdate} disabled={checkingUpdate}>
               {checkingUpdate ? "检查中..." : "检查更新"}

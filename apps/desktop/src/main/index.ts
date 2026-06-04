@@ -876,7 +876,7 @@ ipcMain.handle("update:install", () => {
   // 使用 powershell -Verb RunAs 自动请求管理员权限启动安装包
   if (downloadedInstallerPath) {
     const { exec } = require("node:child_process");
-    exec(`powershell -Command "Start-Process '${downloadedInstallerPath}' -Verb RunAs"`, (error) => {
+    exec(`powershell -Command "Start-Process '${downloadedInstallerPath}' -Verb RunAs"`, (error: Error | null) => {
       if (error) {
         logRuntime("update:install elevated failed: " + error.message);
       }
@@ -988,7 +988,10 @@ if (!gotSingleInstanceLock) {
     makeTrayIcon();
     startEventServer();
     setupAutoUpdater();
-    autoUpdater.checkForUpdates().catch(() => {});
+    // 延迟 5 秒后检查更新，确保应用完全初始化
+    setTimeout(() => {
+      autoUpdater.checkForUpdates().catch(() => {});
+    }, 5000);
   });
 
   app.on("window-all-closed", () => {
