@@ -420,6 +420,7 @@ function setupAutoUpdater() {
   autoUpdater.on("update-downloaded", info => {
     // 尝试从 info 获取路径，fallback 到缓存目录搜索
     downloadedInstallerPath = (info as any).downloadedFile;
+    logRuntime(`update-downloaded: info.downloadedFile = ${downloadedInstallerPath}`);
     if (!downloadedInstallerPath) {
       const fs = require("node:fs") as typeof import("node:fs");
       const path = require("node:path") as typeof import("node:path");
@@ -427,20 +428,28 @@ function setupAutoUpdater() {
       const possibleDirs = [
         path.join(app.getPath("userData"), "..", "Cache", "Clawd Companion", "pending"),
         path.join(app.getPath("userData"), "Cache", "pending"),
-        path.join(app.getPath("temp"), "Clawd Companion", "pending")
+        path.join(app.getPath("temp"), "Clawd Companion", "pending"),
+        path.join(app.getPath("appData"), "Cache", "Clawd Companion", "pending")
       ];
       for (const cacheDir of possibleDirs) {
         try {
+          logRuntime(`update-downloaded: searching ${cacheDir}`);
           const files = fs.readdirSync(cacheDir)
             .filter((f: string) => f.endsWith(".exe"))
             .map((f: string) => ({ name: f, time: fs.statSync(path.join(cacheDir, f)).mtimeMs }))
             .sort((a: any, b: any) => b.time - a.time);
           if (files.length > 0) {
             downloadedInstallerPath = path.join(cacheDir, files[0].name);
+            logRuntime(`update-downloaded: found ${downloadedInstallerPath}`);
             break;
           }
-        } catch {}
+        } catch (e) {
+          logRuntime(`update-downloaded: search failed for ${cacheDir}: ${e}`);
+        }
       }
+    }
+    if (!downloadedInstallerPath) {
+      logRuntime("update-downloaded: FAILED to find installer path");
     }
     updateStatus = { checking: false, available: true, upToDate: false, downloading: false, downloaded: true, version: info.version, progress: 100 };
     broadcastUpdateStatus();
@@ -883,23 +892,30 @@ ipcMain.handle("update:install", () => {
   if (!updateStatus.downloaded) {
     return { ok: false, error: "没有已下载的更新。" };
   }
+  logRuntime(`update:install called, downloadedInstallerPath = ${downloadedInstallerPath}`);
   // 使用 powershell -Verb RunAs 自动请求管理员权限启动安装包
   if (downloadedInstallerPath) {
     const { exec } = require("node:child_process");
-    exec(`powershell -Command "Start-Process '${downloadedInstallerPath}' -Verb RunAs"`, (error: Error | null) => {
+    // 使用 cmd /c start 来处理路径中的空格和特殊字符
+    const cmd = `cmd /c start "" "${downloadedInstallerPath}"`;
+    logRuntime(`update:install executing: ${cmd}`);
+    exec(cmd, (error: Error | null) => {
       if (error) {
-        logRuntime("update:install elevated failed: " + error.message);
+        logRuntime("update:install failed: " + error.message);
+      } else {
+        logRuntime("update:install: installer launched successfully");
       }
     });
     setTimeout(() => app.quit(), 1500);
     return { ok: true };
   }
   // fallback：尝试 electron-updater 标准方式
+  logRuntime("update:install: downloadedInstallerPath is undefined, trying quitAndInstall");
   try {
-    autoUpdater.quitAndInstall();
+    autoUpdater.quitAndInstall(false);
     return { ok: true };
-  } catch {
-    // 忽略
+  } catch (e) {
+    logRuntime("update:install: quitAndInstall failed: " + e);
   }
   logRuntime("update:install failed - downloadedInstallerPath is undefined");
   return { ok: false, error: "找不到已下载的安装包路径，请尝试手动下载。" };
