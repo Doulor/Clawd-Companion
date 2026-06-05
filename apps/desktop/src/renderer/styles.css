@@ -77,6 +77,7 @@ button { border: 0; cursor: pointer; }
 .edit-zone-clawd { left: 0; bottom: 0; width: 226px; height: 238px; z-index: 14; }
 .edit-zone-bubble { left: -4px; top: 10px; width: 234px; height: 124px; z-index: 12; }
 .edit-zone-ribbon { left: -40px; bottom: 24px; width: 144px; height: 144px; z-index: 13; }
+.edit-zone-git-toast { top: 8px; z-index: 15; border-radius: 999px; }
 .edit-live-layer { position: absolute; inset: 0; pointer-events: none; z-index: 4; }
 
 .edge-handle {
@@ -1142,6 +1143,8 @@ input[type="range"]:focus { box-shadow: none; }
 .toggle i::after { content: ""; position: absolute; left: 3px; top: 3px; width: 17px; height: 17px; border-radius: 50%; background: white; transition: transform 170ms ease; }
 .toggle.on i { background: var(--mint); }
 .toggle.on i::after { transform: translateX(15px); }
+.toggle-label-with-badge { display: inline; position: relative; }
+.beta-badge { font-size: 0.5em; color: var(--coral); font-weight: 500; margin-left: 2px; vertical-align: super; }
 .slider-row { display: grid; grid-template-columns: 70px 1fr 58px; align-items: center; gap: 10px; margin-top: 12px; }
 .slider-row b { font-size: 13px; text-align: right; }
 .feedback-mode-list { display: grid; gap: 8px; margin-top: 14px; }
@@ -1168,9 +1171,10 @@ input[type="range"]:focus { box-shadow: none; }
 .tone-coral { background: var(--coral); }
 .tone-ink { background: var(--black); }
 .tone-honey { background: var(--honey); color: var(--black) !important; }
-.test-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.test-grid button { min-height: 42px; border-radius: 8px; color: #fff6db; background: var(--black); transition: transform 150ms ease, background 150ms ease; }
-.test-grid button:hover { transform: translateY(-2px); background: #4a3a2c; }
+.test-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 5px; }
+.test-grid button { min-height: 30px; padding: 0 10px; border-radius: 5px; color: #fff6db; background: var(--black); font-size: 12px; font-weight: 600; line-height: 1.1; transition: transform 80ms ease, background 150ms ease; }
+.test-grid button:hover { background: #2a2520; }
+.test-grid button:active { transform: scale(0.97); }
 .event-list { display: grid; gap: 10px; max-height: 280px; overflow: auto; padding-right: 4px; }
 .event-row { display: grid; grid-template-columns: 82px 150px 1fr 72px 86px; align-items: center; gap: 12px; min-height: 48px; padding: 9px 12px; border-radius: 8px; background: rgba(255, 255, 255, 0.42); border: 1px solid var(--line); }
 .event-row span { color: var(--muted); font-size: 12px; }
@@ -1737,3 +1741,46 @@ input[type="range"]:focus { box-shadow: none; }
   .event-row { grid-template-columns: 72px 1fr 72px; }
   .event-row p, .event-row small { grid-column: 2 / -1; }
 }
+
+/* === Token Panel === */
+.token-panel { display: flex; flex-direction: column; gap: 8px; }
+.token-header { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+.token-header h3 { margin: 0; }
+.contrib-grid-wrap { padding: 4px 0; }
+.contrib-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.contrib-month { display: flex; flex-direction: column; gap: 2px; }
+.contrib-month-title { font-size: 10px; font-weight: 500; color: var(--ink-dim); }
+.contrib-month-cells { display: grid; grid-template-columns: repeat(7, 13px); grid-auto-rows: 13px; gap: 2px; }
+.contrib-cell { width: 13px; height: 13px; border-radius: 2px; transition: transform 0.1s ease; cursor: pointer; }
+.contrib-cell.empty { visibility: hidden; }
+.contrib-cell:hover { transform: scale(1.3); z-index: 5; position: relative; }
+.contrib-cell.level-0 { background: rgba(0,0,0,0.05); }
+.contrib-cell.level-1 { background: #9be9a8; }
+.contrib-cell.level-2 { background: #40c463; }
+.contrib-cell.level-3 { background: #30a14e; }
+.contrib-cell.level-4 { background: #216e39; }
+.contrib-legend { display: flex; align-items: center; gap: 4px; font-size: 10px; color: var(--ink-dim); margin-top: 8px; justify-content: flex-end; }
+.token-table { display: flex; flex-direction: column; gap: 4px; }
+.token-table-header, .token-table-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 12px; padding: 6px 8px; font-size: 12px; }
+.token-table-header { color: var(--ink-dim); font-weight: 500; border-bottom: 1px solid rgba(0,0,0,0.08); }
+.token-table-row { border-bottom: 1px solid rgba(0,0,0,0.04); }
+.token-model-name { font-size: 12px; font-weight: 500; color: var(--ink); }
+.note-inline { color: var(--ink-dim); font-weight: 400; font-size: 11px; }
+.ghost-btn { min-height: 28px; padding: 0 10px; border-radius: 6px; color: var(--ink); background: rgba(255,248,221,0.7); border: 1px solid var(--line); font-size: 12px; font-weight: 600; }
+.ghost-btn:hover { background: #fff8dd; border-color: var(--honey); }
+.ghost-btn.danger { color: var(--coral); border-color: rgba(212,90,90,0.3); }
+
+/* === Sound === */
+.sound-panel { display: flex; flex-direction: column; gap: 10px; max-width: 640px; }
+.sound-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.sound-row-actions { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+.sound-status { font-size: 11px; padding: 2px 6px; border-radius: 4px; }
+.sound-status.ok { color: var(--mint); }
+.sound-status.err { color: var(--coral); }
+
+/* === Git Toast (compact pill, above Clawd) === */
+.git-toast { position: absolute; display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; background: rgba(36, 29, 23, 0.92); color: #fff5d9; border-radius: 999px; font-size: 12px; z-index: 1000; pointer-events: none; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18); backdrop-filter: blur(6px); animation: git-toast-in 180ms ease-out, git-toast-out 200ms ease-in 2s forwards; max-width: 420px; }
+.git-toast-title { color: var(--honey); font-weight: 700; white-space: nowrap; }
+.git-toast-message { color: #fff5d9; opacity: 0.92; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 320px; }
+@keyframes git-toast-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes git-toast-out { from { opacity: 1; } to { opacity: 0; } }

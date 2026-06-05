@@ -57,6 +57,9 @@ contextBridge.exposeInMainWorld("companion", {
   installUpdate: () => ipcRenderer.invoke("update:install"),
   getUpdateStatus: () => ipcRenderer.invoke("update:get-status") as Promise<UpdateStatus>,
   getAppVersion: () => ipcRenderer.invoke("app:get-version") as Promise<string>,
+  getTokenStats: (force?: boolean) => ipcRenderer.invoke("token-stats:get", force) as Promise<import("../shared/events.js").TokenStats>,
+  previewSound: (name: "done" | "error" | "permission" | "session-start") => ipcRenderer.invoke("sound:preview", name) as Promise<{ ok: boolean; dataUrl?: string; error?: string }>,
+  pickSoundFile: () => ipcRenderer.invoke("sound:pick-file") as Promise<string | null>,
   triggerIdleBubble: () => ipcRenderer.invoke("test:idle-bubble"),
   syncIdleBubble: (sprite: string | null) => ipcRenderer.invoke("idle-bubble:sync", sprite),
   onIdleBubbleSync: (callback: (sprite: string | null) => void) => {
@@ -80,6 +83,11 @@ contextBridge.exposeInMainWorld("companion", {
     const handler = (_: Electron.IpcRendererEvent, status: UpdateStatus) => callback(status);
     ipcRenderer.on("companion:update-status", handler);
     return () => ipcRenderer.off("companion:update-status", handler);
+  },
+  onPlaySound: (callback: (dataUrl: string) => void) => {
+    const handler = (_: Electron.IpcRendererEvent, dataUrl: string) => callback(dataUrl);
+    ipcRenderer.on("companion:play-sound", handler);
+    return () => ipcRenderer.off("companion:play-sound", handler);
   }
 });
 
@@ -111,6 +119,9 @@ declare global {
       installUpdate: () => Promise<{ ok: boolean; error?: string }>;
       getUpdateStatus: () => Promise<UpdateStatus>;
       getAppVersion: () => Promise<string>;
+      getTokenStats: (force?: boolean) => Promise<import("../shared/events.js").TokenStats>;
+      previewSound: (name: "done" | "error" | "permission" | "session-start") => Promise<{ ok: boolean; dataUrl?: string; error?: string }>;
+      pickSoundFile: () => Promise<string | null>;
       triggerIdleBubble: () => Promise<void>;
       onTriggerIdleBubble: (callback: () => void) => () => void;
       syncIdleBubble: (sprite: string | null) => Promise<void>;
@@ -123,6 +134,7 @@ declare global {
       exportStatsFile: () => Promise<{ ok: boolean; error?: string }>;
       importStatsFile: () => Promise<{ ok: boolean; error?: string }>;
       onUpdateStatus: (callback: (status: UpdateStatus) => void) => () => void;
+      onPlaySound: (callback: (dataUrl: string) => void) => () => void;
     };
   }
 }

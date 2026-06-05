@@ -41,9 +41,9 @@
 - **`.github/workflows/ci.yml`**：push / PR 触发，运行 typecheck + 测试（windows-latest）
 - **`.github/workflows/release.yml`**：tag 触发（`v*.*.*`），自动构建、产物重命名、上传到 GitHub Release
 
-## Claude Code 启动时自动启动本应用
+## Codex 启动时自动启动本应用
 
-**默认关闭**，需要用户在配置面板 → 应用行为 中开启「Claude Code 启动时自动启动本应用」开关。
+**默认关闭**，需要用户在配置面板 → 应用行为 中开启「Codex 启动时自动启动本应用」开关。
 
 开关实现细节：
 1. 主程序把开关状态写入标记文件 `~/.clawd-companion/auto-start-with-cli.flag`

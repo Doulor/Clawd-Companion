@@ -71,7 +71,10 @@ const sampleEvents: CompanionEvent[] = [
   makeEvent("tool_start", "manual", "正在搜索", "Grep/Glob 正在检索。", "Grep"),
   makeEvent("permission_wait", "manual", "需要确认", "Claude Code 正在等待你的许可。"),
   makeEvent("done", "manual", "处理完成", "这一轮已经结束。"),
-  makeEvent("error", "manual", "执行失败", "有一个工具调用没有成功。")
+  makeEvent("error", "manual", "执行失败", "有一个工具调用没有成功。"),
+  makeEvent("git_operation", "manual", "✓ commit", "feat: 添加新功能", undefined),
+  makeEvent("git_operation", "manual", "↔ checkout", "已切换到 main", undefined),
+  makeEvent("git_operation", "manual", "✓ merge", "Merge branch 'feature'", undefined)
 ];
 
 const stateFeedbackMode: Record<PetState, FeedbackMode> = {
@@ -300,8 +303,8 @@ function useCompanion() {
             eventThrottleRef.current.lastFlush = Date.now();
             setEvents(previous => [...pending.reverse(), ...previous].slice(0, settings.eventHistoryLimit));
             // pending 已被 reverse()（最新在前）
-            // 优先取 tool_start（工具动画优先级最高），否则取最近的非 tool_end 事件
-            const stateEvent = pending.find(e => e.event === "tool_start") ?? pending.find(e => e.event !== "tool_end");
+            // 优先取 tool_start（工具动画优先级最高），否则取最近的非 tool_end / git_operation 事件
+            const stateEvent = pending.find(e => e.event === "tool_start") ?? pending.find(e => e.event !== "tool_end" && e.event !== "git_operation");
             if (stateEvent) {
               setPetState(stateFromEvent(stateEvent));
               setCurrentEvent(stateEvent);
@@ -311,7 +314,8 @@ function useCompanion() {
       } else {
         eventThrottleRef.current.lastFlush = now;
         setEvents(previous => [event, ...previous].slice(0, settings.eventHistoryLimit));
-        if (event.event !== "tool_end") {
+        // git_operation 只触发胶囊（git-toast listener），不切 Pet 状态 / 卡片
+        if (event.event !== "tool_end" && event.event !== "git_operation") {
           setPetState(stateFromEvent(event));
           setCurrentEvent(event);
         }
@@ -467,11 +471,35 @@ function PetApp() {
   const [randomBubble, setRandomBubble] = useState<string | null>(null);
   const idleTimers = useRef<number[]>([]);
 
+  // Git 操作气泡：触发时在 Clawd 头顶弹出，2.2 秒后自动消失
+  const [gitToast, setGitToast] = useState<{ id: string; title: string; message: string } | null>(null);
+  const gitToastTimer = useRef<number | null>(null);
+  useEffect(() => {
+    const off = window.companion.onEvent(event => {
+      if (event.event !== "git_operation") return;
+      if (gitToastTimer.current) window.clearTimeout(gitToastTimer.current);
+      setGitToast({ id: event.id, title: event.title, message: event.message });
+      gitToastTimer.current = window.setTimeout(() => setGitToast(null), 2200);
+    });
+    return () => {
+      off();
+      if (gitToastTimer.current) window.clearTimeout(gitToastTimer.current);
+    };
+  }, []);
+
   // 响应测试按钮
   useEffect(() => {
     const off = window.companion.onTriggerIdleBubble(() => {
       setRandomBubble("idle");
       setTimeout(() => setRandomBubble(null), 2500);
+    });
+    return () => off();
+  }, []);
+
+  // HTML5 Audio 播放音效
+  useEffect(() => {
+    const off = window.companion.onPlaySound((dataUrl) => {
+      try { const a = new Audio(dataUrl); a.volume = settings.sound.volume; a.play(); } catch { /* ignore */ }
     });
     return () => off();
   }, []);
@@ -766,6 +794,18 @@ function PetApp() {
             <span className="edit-zone-label">权限卡片</span>
             <span className="zone-resize" onMouseDown={e => beginResize("permission", e)} />
           </div>
+          <div className="edit-zone edit-zone-git-toast"
+            style={{
+              top: 8,
+              left: "50%",
+              transform: `translateX(-50%) translate(${offsets.gitToast?.x ?? 0}px, ${offsets.gitToast?.y ?? 0}px)`,
+              width: 240,
+              height: 36
+            }}
+            onMouseDown={e => begin("gitToast", e)}>
+            <span className="edit-zone-label">Git 胶囊</span>
+            <span className="zone-resize" onMouseDown={e => beginResize("gitToast", e)} />
+          </div>
           {settings.multiSessionEnabled && [0, 1, 2].map(i => {
             const cScale = settings.companionScale ?? 0.6;
             const off = (offsets as any)[`companion${i}`] ?? { x: 80 + i * 100, y: -120 - i * 80 };
@@ -791,6 +831,12 @@ function PetApp() {
   return (
     <main className={`pet-stage ${settings.clickThrough ? 'pet-clickthrough' : ''}`}>
       <section className="pet-anchor" style={{ transform: `translateX(-50%) scale(${settings.petScale}) translate(${viewOff.x}px, ${viewOff.y}px)`, opacity: settings.petOpacity }} onMouseDown={beginNormalDrag}>
+      {gitToast && (
+        <div className="git-toast" key={gitToast.id} style={{ top: 8, left: "50%", transform: `translateX(-50%) translate(${(settings.positionOffsets?.gitToast?.x ?? 0)}px, ${(settings.positionOffsets?.gitToast?.y ?? 0)}px)` }}>
+          <span className="git-toast-title">{gitToast.title}</span>
+          <span className="git-toast-message">{gitToast.message}</span>
+        </div>
+      )}
         {activePermissions.length > 0 ? (
           <div className="permission-card-wrapper" style={{ transform: `translate(${offsets.permission?.x ?? 0}px, ${offsets.permission?.y ?? 0}px)` }}>
             <PermissionCard
@@ -1139,6 +1185,22 @@ function SettingsApp() {
   const [advancedTab, setAdvancedTab] = useState("privacy");
   const [now, setNow] = useState(Date.now());
   const [appVersion, setAppVersion] = useState("...");
+
+  // Git 胶囊：在设置窗口也渲染一份（pet 窗口可能被遮挡）
+  const [gitToast, setGitToast] = useState<{ id: string; title: string; message: string } | null>(null);
+  const gitToastTimer = useRef<number | null>(null);
+  useEffect(() => {
+    const off = window.companion.onEvent(event => {
+      if (event.event !== "git_operation") return;
+      if (gitToastTimer.current) window.clearTimeout(gitToastTimer.current);
+      setGitToast({ id: event.id, title: event.title, message: event.message });
+      gitToastTimer.current = window.setTimeout(() => setGitToast(null), 2200);
+    });
+    return () => {
+      off();
+      if (gitToastTimer.current) window.clearTimeout(gitToastTimer.current);
+    };
+  }, []);
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus>({
     checking: false,
     available: false,
@@ -1167,9 +1229,12 @@ function SettingsApp() {
       setPreviewIdleBubble("idle");
       setTimeout(() => setPreviewIdleBubble(null), 2500);
     });
+    const offPlaySound = window.companion.onPlaySound((dataUrl) => {
+      try { new Audio(dataUrl).play(); } catch { /* ignore */ }
+    });
     // 每 10 秒刷新统计
     const statsInterval = window.setInterval(() => window.companion.getStats().then(setPersistedStats), 10_000);
-    return () => { offUpdate(); offIdle(); window.clearInterval(statsInterval); };
+    return () => { offUpdate(); offIdle(); offPlaySound(); window.clearInterval(statsInterval); };
   }, []);
 
   useEffect(() => {
@@ -1243,6 +1308,12 @@ function SettingsApp() {
 
   return (
     <main className="settings-shell">
+      {gitToast && (
+        <div className="git-toast" key={gitToast.id} style={{ left: "50%", top: 64, transform: "translateX(-50%)" }}>
+          <span className="git-toast-title">{gitToast.title}</span>
+          <span className="git-toast-message">{gitToast.message}</span>
+        </div>
+      )}
       <section className="window-bar">
         <div className="window-title">
           <Sparkles size={16} />Clawd Companion
@@ -1379,6 +1450,7 @@ function SettingsApp() {
 
         <Panel title="应用行为" icon={<MousePointer2 size={18} />}>
           <Toggle label="开机自启" checked={settings.launchAtLogin} onChange={launchAtLogin => updateSettings({ launchAtLogin })} />
+          <Toggle label="Claude Code 启动时自动启动" checked={settings.autoStartWithCli} onChange={autoStartWithCli => updateSettings({ autoStartWithCli })} />
           <Toggle label="启动时打开配置面板" checked={settings.openSettingsOnStart} onChange={openSettingsOnStart => updateSettings({ openSettingsOnStart })} />
           <Toggle label="完成时系统通知" checked={settings.doneSound} onChange={doneSound => updateSettings({ doneSound })} />
           <Slider label="气泡停留" min={3} max={18} step={1} value={settings.bubbleDuration} format={value => `${value} 秒`} onChange={bubbleDuration => updateSettings({ bubbleDuration })} />
@@ -1386,7 +1458,7 @@ function SettingsApp() {
           <Slider label="事件历史" min={12} max={100} step={4} value={settings.eventHistoryLimit} format={value => `${value} 条`} onChange={eventHistoryLimit => updateSettings({ eventHistoryLimit })} />
           <div className="panel-divider" />
           <h3 className="panel-subtitle">多会话模式</h3>
-          <Toggle label="启用多会话" checked={settings.multiSessionEnabled} onChange={multiSessionEnabled => updateSettings({ multiSessionEnabled })} />
+          <Toggle label={<span className="toggle-label-with-badge">启用多会话<sup className="beta-badge">测试中</sup></span>} checked={settings.multiSessionEnabled} onChange={multiSessionEnabled => updateSettings({ multiSessionEnabled })} />
           {settings.multiSessionEnabled && (
               <Slider label="小 Clawd 缩放" min={0.3} max={0.8} step={0.05} value={settings.companionScale} format={value => `${Math.round(value * 100)}%`} onChange={companionScale => updateSettings({ companionScale })} />
           )}
@@ -1403,6 +1475,8 @@ function SettingsApp() {
             <div className="advanced-tabs">
               {[
                 ["privacy", "隐私端口"],
+                ["token", "Token 用量"],
+                ["sound", "声音"],
                 ["idle", "待机动画"],
                 ["mapping", "动作映射"],
                 ["test", "测试事件"],
@@ -1413,6 +1487,8 @@ function SettingsApp() {
               ))}
             </div>
             <div className="advanced-content">
+              {advancedTab === "token" && <TokenPanel />}
+              {advancedTab === "sound" && <SoundSettingsPanel settings={settings} updateSettings={updateSettings} />}
               {advancedTab === "privacy" && (
                 <div className="settings-columns compact">
                   <section className="settings-group">
@@ -1692,7 +1768,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   return <label className="field"><span>{label}</span>{children}</label>;
 }
 
-function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (value: boolean) => void }) {
+function Toggle({ label, checked, onChange }: { label: React.ReactNode; checked: boolean; onChange: (value: boolean) => void }) {
   return (
     <button className={`toggle ${checked ? "on" : ""}`} onClick={() => onChange(!checked)}>
       {checked ? <Eye size={17} /> : <EyeOff size={17} />}
@@ -2125,6 +2201,190 @@ function StatsPanel({ stats }: { stats: any }) {
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+function TokenPanel() {
+  const [stats, setStats] = useState<{ totalTokens: number; totalSessions: number; lastScannedAt: number; dailyTotals: { date: string; totalTokens: number; sessionCount: number }[]; modelTotals: { model: string; totalTokens: number; sessionCount: number; messageCount: number }[]; sessions: any[] } | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showAllModels, setShowAllModels] = useState(false);
+  const load = async (force = false) => {
+    setError(null);
+    if (force) setRefreshing(true);
+    try {
+      const result = await window.companion.getTokenStats(force);
+      setStats(result);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => { void load(false); }, []);
+
+  const fmtTok = (n: number) => n >= 1_000_000_000 ? (n / 1_000_000_000).toFixed(2) + "B" : n >= 1_000_000 ? (n / 1_000_000).toFixed(1) + "M" : n >= 1_000 ? (n / 1_000).toFixed(1) + "K" : String(n);
+
+  if (error) return <div className="note" style={{ color: "var(--coral)" }}>加载失败: {error}</div>;
+  if (!stats) return <div className="note">扫描中… 首次扫描可能需要数十秒。</div>;
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayEntry = stats.dailyTotals.find(d => d.date === todayStr);
+  const todayTokens = todayEntry?.totalTokens ?? 0;
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 86400_000).toISOString().slice(0, 10);
+  const last30 = stats.dailyTotals.filter(d => d.date >= thirtyDaysAgo).reduce((s, d) => s + d.totalTokens, 0);
+  const last30Sessions = stats.dailyTotals.filter(d => d.date >= thirtyDaysAgo).reduce((s, d) => s + d.sessionCount, 0);
+
+  // Build per-month calendar grids for the last 12 months
+  const todayDate = new Date();
+  const map = new Map(stats.dailyTotals.map(d => [d.date, d.totalTokens]));
+  const allTokens = Array.from(map.values());
+  const maxTokens = Math.max(1, ...allTokens);
+  const getLevel = (tokens: number): 0 | 1 | 2 | 3 | 4 => {
+    if (tokens <= 0) return 0;
+    const r = tokens / maxTokens;
+    if (r > 0.75) return 4;
+    if (r > 0.5) return 3;
+    if (r > 0.25) return 2;
+    return 1;
+  };
+  // Generate 12 months: from (current month - 11) to current month
+  const months: { label: string; cells: ({ date: string; tokens: number; level: 0|1|2|3|4 } | null)[] }[] = [];
+  for (let offset = 11; offset >= 0; offset--) {
+    const mDate = new Date(todayDate.getFullYear(), todayDate.getMonth() - offset, 1);
+    const year = mDate.getFullYear();
+    const month = mDate.getMonth();
+    const label = `${month + 1}月`;
+    const firstDow = mDate.getDay(); // 0=Sun
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const cells: ({ date: string; tokens: number; level: 0|1|2|3|4 } | null)[] = [];
+    // Pad before first day
+    for (let i = 0; i < firstDow; i++) cells.push(null);
+    // Fill days
+    for (let d = 1; d <= daysInMonth; d++) {
+      const ds = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      const tokens = map.get(ds) ?? 0;
+      cells.push({ date: ds, tokens, level: getLevel(tokens) });
+    }
+    months.push({ label, cells });
+  }
+
+  return (
+    <div className="token-panel">
+      <div className="token-header">
+        <div>
+          <h3 className="panel-subtitle">Token 用量</h3>
+          <p className="note">扫描 {stats.totalSessions} 个会话 · 上次扫描 {new Date(stats.lastScannedAt).toLocaleString()}</p>
+        </div>
+        <button className="ghost-btn" onClick={() => load(true)} disabled={refreshing}>{refreshing ? "扫描中…" : "刷新"}</button>
+      </div>
+      <div className="stats-grid">
+        <div className="stat-item"><span className="stat-value">{todayTokens >= 1_000_000 ? (todayTokens/1_000_000).toFixed(2)+"M" : todayTokens >= 1_000 ? (todayTokens/1_000).toFixed(1)+"K" : todayTokens}</span><span className="stat-label">今日</span></div>
+        <div className="stat-item"><span className="stat-value">{last30 >= 1_000_000 ? (last30/1_000_000).toFixed(2)+"M" : last30 >= 1_000 ? (last30/1_000).toFixed(1)+"K" : last30}</span><span className="stat-label">30天</span></div>
+        <div className="stat-item"><span className="stat-value">{stats.totalTokens >= 1_000_000 ? (stats.totalTokens/1_000_000).toFixed(2)+"M" : stats.totalTokens >= 1_000 ? (stats.totalTokens/1_000).toFixed(1)+"K" : stats.totalTokens}</span><span className="stat-label">累计</span></div>
+        <div className="stat-item"><span className="stat-value">{last30Sessions}</span><span className="stat-label">30天会话数</span></div>
+      </div>
+      <div className="panel-divider" />
+      <h3 className="panel-subtitle">近 12 个月用量</h3>
+      <div className="contrib-grid-wrap">
+        <div className="contrib-grid">
+          {months.map((m, mi) => (
+            <div key={mi} className="contrib-month">
+              <div className="contrib-month-title">{m.label}</div>
+              <div className="contrib-month-cells">
+                {m.cells.map((cell, ci) => cell ? (
+                  <div key={ci} className={`contrib-cell level-${cell.level}`} title={`${cell.date}: ${fmtTok(cell.tokens)}`} />
+                ) : <div key={ci} className="contrib-cell empty" />)}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="contrib-legend">
+          <span>少</span>
+          <div className="contrib-cell level-0" />
+          <div className="contrib-cell level-1" />
+          <div className="contrib-cell level-2" />
+          <div className="contrib-cell level-3" />
+          <div className="contrib-cell level-4" />
+          <span>多</span>
+        </div>
+      </div>
+      <div className="panel-divider" />
+      <h3 className="panel-subtitle">按模型拆分 {stats.modelTotals.length > 0 && <span className="note-inline">· 共 {stats.modelTotals.length} 个</span>}</h3>
+      {stats.modelTotals.length === 0 ? <p className="note">无数据</p> : (
+        <div className="token-table">
+          <div className="token-table-header"><span>模型</span><span>Tokens</span><span>会话</span><span>消息</span></div>
+          {(showAllModels ? stats.modelTotals : stats.modelTotals.slice(0, 5)).map(m => (
+            <div key={m.model} className="token-table-row">
+              <span className="token-model-name">{m.model}</span>
+              <span>{m.totalTokens.toLocaleString("en-US")}</span>
+              <span>{m.sessionCount}</span>
+              <span>{m.messageCount}</span>
+            </div>
+          ))}
+          {stats.modelTotals.length > 5 && (
+            <button className="ghost-btn" style={{ marginTop: 4, width: "100%" }} onClick={() => setShowAllModels(v => !v)}>
+              {showAllModels ? "收起" : `查看更多 (${stats.modelTotals.length - 5})`}
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SoundSettingsPanel({ settings, updateSettings }: { settings: CompanionSettings; updateSettings: (s: Partial<CompanionSettings>) => void }) {
+  const sound = settings.sound;
+  const update = (patch: Partial<typeof sound>) => updateSettings({ sound: { ...sound, ...patch } });
+  const [status, setStatus] = useState<Record<string, { ok: boolean; error?: string } | null>>({});
+  const pickOverride = async (key: "fileDone" | "fileError" | "filePermission" | "fileSessionStart") => {
+    const file = await window.companion.pickSoundFile();
+    if (file !== null) update({ [key]: file });
+  };
+  const SoundRow = ({ label, keyName, overrideKey }: { label: string; keyName: "onDone" | "onError" | "onPermission" | "onSessionStart"; overrideKey: "fileDone" | "fileError" | "filePermission" | "fileSessionStart" }) => {
+    const previewName = keyName === "onDone" ? "done" : keyName === "onError" ? "error" : keyName === "onPermission" ? "permission" : "session-start";
+    const handlePreview = async () => {
+      setStatus(prev => ({ ...prev, [overrideKey]: null }));
+      const result = await window.companion.previewSound(previewName as any);
+      if (result.ok && result.dataUrl) {
+        try {
+          const audio = new Audio(result.dataUrl);
+          audio.volume = sound.volume;
+          await audio.play();
+          setStatus(prev => ({ ...prev, [overrideKey]: { ok: true } }));
+        } catch {
+          setStatus(prev => ({ ...prev, [overrideKey]: { ok: false, error: "播放失败" } }));
+        }
+      } else {
+        setStatus(prev => ({ ...prev, [overrideKey]: result }));
+      }
+      setTimeout(() => setStatus(prev => ({ ...prev, [overrideKey]: null })), 3000);
+    };
+    return (
+      <div className="sound-row">
+        <Toggle label={label} checked={sound[keyName]} onChange={v => update({ [keyName]: v })} />
+        <div className="sound-row-actions">
+          <button className="ghost-btn" onClick={handlePreview}>试听</button>
+          <button className="ghost-btn" onClick={() => pickOverride(overrideKey)}>选择文件</button>
+          {sound[overrideKey] && <button className="ghost-btn danger" onClick={() => update({ [overrideKey]: null })}>清除</button>}
+          {status[overrideKey] && <span className={`sound-status ${status[overrideKey]!.ok ? "ok" : "err"}`}>{status[overrideKey]!.ok ? "已播放" : `失败: ${status[overrideKey]!.error ?? "未知"}`}</span>}
+        </div>
+      </div>
+    );
+  };
+  return (
+    <div className="sound-panel">
+      <Toggle label="启用音效" checked={sound.enabled} onChange={enabled => update({ enabled })} />
+      <Slider label="音量" min={0} max={1} step={0.05} value={sound.volume} format={v => `${Math.round(v * 100)}%`} onChange={volume => update({ volume })} />
+      <div className="panel-divider" />
+      <h3 className="panel-subtitle">事件触发</h3>
+      <SoundRow label="完成 (Done)" keyName="onDone" overrideKey="fileDone" />
+      <SoundRow label="错误 (Error)" keyName="onError" overrideKey="fileError" />
+      <SoundRow label="权限请求" keyName="onPermission" overrideKey="filePermission" />
+      <SoundRow label="会话开始" keyName="onSessionStart" overrideKey="fileSessionStart" />
+      <p className="note">默认内置音效在 build/sounds/。选择文件可覆盖为本地 wav/mp3/ogg/flac。</p>
     </div>
   );
 }

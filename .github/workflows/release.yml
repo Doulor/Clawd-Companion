@@ -1,0 +1,65 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build & Publish
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build installer
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run dist
+
+      - name: Rename artifacts to match latest.yml
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd release
+          # electron-builder emits "Clawd Companion Setup X.Y.Z.exe" / .blockmap
+          # but our release contract (see CLAUDE.md) requires the hyphen form.
+          for f in *.exe *.blockmap; do
+            [ -e "$f" ] || continue
+            newname=$(echo "$f" | tr ' ' '-')
+            if [ "$f" != "$newname" ]; then
+              mv -- "$f" "$newname"
+              echo "renamed: $f -> $newname"
+            fi
+          done
+
+      - name: Validate latest.yml
+        run: npm run dist:validate
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release/*.exe
+            release/*.blockmap
+            release/latest.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

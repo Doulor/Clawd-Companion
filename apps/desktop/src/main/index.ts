@@ -1,14 +1,17 @@
-import { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage, Notification, screen, shell } from "electron";
+import { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage, Notification, screen, shell, dialog } from "electron";
 import electronUpdater from "electron-updater";
 const { autoUpdater } = electronUpdater;
 import { createServer, IncomingMessage, ServerResponse } from "node:http";
 import { WebSocketServer } from "ws";
-import { appendFileSync, readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync } from "node:fs";
+import { appendFileSync, readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync, unlinkSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { homedir } from "node:os";
-import type { CompanionConnectionStatus, CompanionEvent, CompanionSettings, PermissionPollResult, PermissionResponse, UpdateStatus, AppStats } from "../shared/events.js";
+import type { CompanionConnectionStatus, CompanionEvent, CompanionSettings, PermissionPollResult, PermissionResponse, UpdateStatus, AppStats, TokenStats } from "../shared/events.js";
 import { defaultSettings, defaultStats } from "../shared/events.js";
+import { scanTokenStats, setCachePath as setTokenCachePath } from "./token-stats.js";
+import { setGitEventHandler, startGitWatcher, stopGitWatcher } from "./git-watcher.js";
+import { getSoundDataUrl, previewSoundDataUrl } from "./sound.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const isDev = Boolean(process.env.VITE_DEV_SERVER_URL);
@@ -19,6 +22,9 @@ const appDataDir = join(app.getPath("userData"), "clawd-companion");
 const settingsPath = join(appDataDir, "settings.json");
 const statsPath = join(appDataDir, "stats.json");
 const logPath = join(appDataDir, "runtime.log");
+const tokenCachePath = join(appDataDir, "token-stats-cache.json");
+setTokenCachePath(tokenCachePath);
+let lastKnownCwd: string | null = null;
 
 let petWindow: BrowserWindow | null = null;
 let settingsWindow: BrowserWindow | null = null;
@@ -140,6 +146,20 @@ function logRuntime(message: string) {
   appendFileSync(logPath, `[${new Date().toISOString()}] ${message}\n`);
 }
 
+const autoStartMarkerDir = join(homedir(), ".clawd-companion");
+const autoStartMarkerPath = join(autoStartMarkerDir, "auto-start-with-cli.flag");
+
+function syncAutoStartMarker(enabled: boolean) {
+  try {
+    if (enabled) {
+      if (!existsSync(autoStartMarkerDir)) mkdirSync(autoStartMarkerDir, { recursive: true });
+      if (!existsSync(autoStartMarkerPath)) writeFileSync(autoStartMarkerPath, "1");
+    } else {
+      if (existsSync(autoStartMarkerPath)) unlinkSync(autoStartMarkerPath);
+    }
+  } catch { /* ignore */ }
+}
+
 function loadSettings(): CompanionSettings {
   ensureDataDir();
   if (!existsSync(settingsPath)) {
@@ -161,6 +181,7 @@ function saveSettings(next: Partial<CompanionSettings>) {
   settings = { ...settings, ...next };
   writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
   app.setLoginItemSettings({ openAtLogin: settings.launchAtLogin, path: process.execPath });
+  syncAutoStartMarker(settings.autoStartWithCli);
   if (petWindow && (settings.viewScale ?? settings.petScale) !== previousViewScale) {
     const size = petWindowSize();
     petWindow.setSize(size.width, size.height);
@@ -657,6 +678,10 @@ function emitEvent(event: CompanionEvent) {
   activeSessionId = event.sessionId ?? activeSessionId;
   activeClientType = event.clientType ?? activeClientType;
   activeClientLabel = event.clientLabel ?? activeClientLabel;
+  if (event.cwd && event.cwd !== lastKnownCwd) {
+    lastKnownCwd = event.cwd;
+    startGitWatcher(event.cwd);
+  }
   if (settings.petEnabled && petWindow && !petWindow.isDestroyed()) {
     if (!petWindow.isVisible()) { petWindow.setOpacity(1); petWindow.show(); }
   }
@@ -667,6 +692,12 @@ function emitEvent(event: CompanionEvent) {
 
   if (settings.doneSound && event.event === "done" && Notification.isSupported()) {
     new Notification({ title: event.title, body: event.message }).show();
+  }
+  // Sound: get data URL and send to renderer for HTML5 Audio playback
+  const soundDataUrl = getSoundDataUrl(event.event, settings.sound);
+  if (soundDataUrl) {
+    petWindow?.webContents.send("companion:play-sound", soundDataUrl);
+    settingsWindow?.webContents.send("companion:play-sound", soundDataUrl);
   }
 }
 
@@ -915,6 +946,20 @@ ipcMain.handle("update:install", () => {
 ipcMain.handle("update:get-status", () => updateStatus);
 ipcMain.handle("app:get-version", () => app.getVersion());
 ipcMain.handle("stats:get", () => appStats);
+ipcMain.handle("token-stats:get", async (_, force?: boolean) => {
+  return scanTokenStats(force === true);
+});
+ipcMain.handle("sound:preview", (_, name: "done" | "error" | "permission" | "session-start") => {
+  return previewSoundDataUrl(name);
+});
+ipcMain.handle("sound:pick-file", async () => {
+  const result = await dialog.showOpenDialog({
+    properties: ["openFile"],
+    filters: [{ name: "音频", extensions: ["wav", "mp3", "ogg", "flac"] }]
+  });
+  if (result.canceled || result.filePaths.length === 0) return null;
+  return result.filePaths[0];
+});
 ipcMain.handle("stats:reset", () => {
   appStats = { ...defaultStats, firstStartTime: Date.now() };
   saveStats();
@@ -1001,6 +1046,8 @@ if (!gotSingleInstanceLock) {
     appStats = loadStats();
     appStartTime = Date.now();
     app.setLoginItemSettings({ openAtLogin: settings.launchAtLogin, path: process.execPath });
+    syncAutoStartMarker(settings.autoStartWithCli);
+    setGitEventHandler(emitEvent);
     createPetWindow();
     if (settings.openSettingsOnStart) createSettingsWindow();
     makeTrayIcon();
@@ -1021,6 +1068,7 @@ if (!gotSingleInstanceLock) {
     saveStats();
     wsServer?.close();
     eventServer?.close();
+    stopGitWatcher();
     pendingPermissions.forEach(p => {
       clearTimeout(p.timeout);
       p.resolve({ status: "expired", reason: "App quitting" });

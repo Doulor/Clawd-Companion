@@ -39,6 +39,9 @@ declare global {
       installUpdate: () => Promise<{ ok: boolean; error?: string }>;
       getUpdateStatus: () => Promise<UpdateStatus>;
       getAppVersion: () => Promise<string>;
+      getTokenStats: (force?: boolean) => Promise<import("../shared/events").TokenStats>;
+      previewSound: (name: "done" | "error" | "permission" | "session-start") => Promise<{ ok: boolean; dataUrl?: string; error?: string }>;
+      pickSoundFile: () => Promise<string | null>;
       triggerIdleBubble: () => Promise<void>;
       onTriggerIdleBubble: (callback: () => void) => () => void;
       syncIdleBubble: (sprite: string | null) => Promise<void>;
@@ -51,6 +54,7 @@ declare global {
       exportStatsFile: () => Promise<{ ok: boolean; error?: string }>;
       importStatsFile: () => Promise<{ ok: boolean; error?: string }>;
       onUpdateStatus: (callback: (status: UpdateStatus) => void) => () => void;
+      onPlaySound: (callback: (dataUrl: string) => void) => () => void;
     };
   }
 }

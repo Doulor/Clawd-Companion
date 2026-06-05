@@ -56,7 +56,8 @@ export type CompanionEventType =
   | "permission_wait"
   | "done"
   | "error"
-  | "heartbeat";
+  | "heartbeat"
+  | "git_operation";
 
 export type PetState =
   | "idle"
@@ -109,6 +110,7 @@ export interface CompanionEvent {
   clientType?: ClientType;
   clientLabel?: string;
   tool?: ToolName;
+  cwd?: string;
   title: string;
   message: string;
   detail?: string;
@@ -147,7 +149,9 @@ export interface CompanionSettings {
   mainClawdIdleAnimation: string;
   launchAtLogin: boolean;
   openSettingsOnStart: boolean;
+  autoStartWithCli: boolean;
   doneSound: boolean;
+  sound: SoundSettings;
   eventHistoryLimit: number;
   position?: { x: number; y: number };
   positionOffsets?: {
@@ -160,6 +164,7 @@ export interface CompanionSettings {
     companion1?: { x: number; y: number };
     companion2?: { x: number; y: number };
     view?: { x: number; y: number };
+    gitToast?: { x: number; y: number };
   };
   zoneSizes?: {
     clawd?: { w: number; h: number };
@@ -180,6 +185,58 @@ export interface IdleAnimConfig {
   intervalMax: number;
   repeatMin: number;
   repeatMax: number;
+}
+
+export interface SoundSettings {
+  enabled: boolean;
+  volume: number;
+  onDone: boolean;
+  onError: boolean;
+  onPermission: boolean;
+  onSessionStart: boolean;
+  fileDone: string | null;
+  fileError: string | null;
+  filePermission: string | null;
+  fileSessionStart: string | null;
+}
+
+export interface SessionTokenInfo {
+  sessionId: string;
+  project: string;
+  cwd: string;
+  startTime: number;
+  endTime: number;
+  model: string;
+  entrypoint: string;
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheCreationTokens: number;
+  totalTokens: number;
+  messageCount: number;
+}
+
+export interface DailyTokenEntry {
+  date: string;
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheCreationTokens: number;
+  totalTokens: number;
+  sessionCount: number;
+  messageCount: number;
+}
+
+export interface TokenStats {
+  sessions: SessionTokenInfo[];
+  daily: DailyTokenEntry[];
+  modelTotals: { model: string; totalTokens: number; sessionCount: number; messageCount: number }[];
+  dailyTotals: { date: string; totalTokens: number; sessionCount: number; messageCount: number }[];
+  totalTokens: number;
+  totalSessions: number;
+  lastScannedAt: number;
+  scanning: boolean;
 }
 
 export interface UpdateStatus {
@@ -251,7 +308,20 @@ export const defaultSettings: CompanionSettings = {
   mainClawdIdleAnimation: "random",
   launchAtLogin: false,
   openSettingsOnStart: true,
+  autoStartWithCli: false,
   doneSound: false,
+  sound: {
+    enabled: true,
+    volume: 0.5,
+    onDone: true,
+    onError: true,
+    onPermission: false,
+    onSessionStart: false,
+    fileDone: null,
+    fileError: null,
+    filePermission: null,
+    fileSessionStart: null
+  },
   eventHistoryLimit: 40,
   positionOffsets: {
     clawd: { x: 707, y: -61 },
@@ -284,6 +354,7 @@ export function stateFromEvent(event: CompanionEvent): PetState {
   if (event.event === "error") return "error";
   if (event.event === "permission_wait") return "waiting_permission";
   if (event.event === "done") return "done";
+  if (event.event === "git_operation") return "thinking";
   if (event.event === "prompt_submit" || event.event === "session_start") return "thinking";
   if (event.event === "tool_start") {
     if (event.tool === "Read" || event.tool === "Notebook") return "tool_read";
