@@ -56,9 +56,11 @@
     }
   },
   "dependencies": {
+    "@fontsource/inter": "^5.2.8",
     "@vitejs/plugin-react": "latest",
     "electron-updater": "^6.8.3",
     "lucide-react": "latest",
+    "open-props": "^1.7.23",
     "react": "latest",
     "react-dom": "latest",
     "ws": "latest"
