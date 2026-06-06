@@ -5,7 +5,6 @@
 @import "open-props/easings";
 @import "open-props/animations";
 @import "open-props/fonts";
-@import "open-props/normalize";
 
 @font-face {
   font-family: "Clawd Display";
