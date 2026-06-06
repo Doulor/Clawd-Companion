@@ -1321,303 +1321,277 @@ function SettingsApp() {
           <button className="close" title="关闭配置" onClick={() => window.companion.closeSettings()}>×</button>
         </div>
       </section>
-      <aside className="rail">
-        <div className="mark"><Sparkles size={26} /></div>
-        <button className={`rail-button ${activeSection === "general" ? "active" : ""}`} title="总览" onClick={() => jumpTo("general")}><Gauge size={20} /></button>
-        <button className={`rail-button ${activeSection === "connect" ? "active" : ""}`} title="连接" onClick={() => jumpTo("connect")}><PlugZap size={20} /></button>
-        <button className={`rail-button ${activeSection === "appearance" ? "active" : ""}`} title="外观" onClick={() => jumpTo("appearance")}><Bot size={20} /></button>
-        <button className={`rail-button ${activeSection === "behavior" ? "active" : ""}`} title="行为" onClick={() => jumpTo("behavior")}><MousePointer2 size={20} /></button>
-        <button className={`rail-button ${activeSection === "animation" ? "active" : ""}`} title="动画" onClick={() => jumpTo("animation")}><Wand2 size={20} /></button>
-        <button className={`rail-button ${activeSection === "data" ? "active" : ""}`} title="数据" onClick={() => jumpTo("data")}><FileText size={20} /></button>
-      </aside>
+      <nav className="tab-bar">
+        <button className={`tab-item ${activeSection === "general" ? "active" : ""}`} onClick={() => jumpTo("general")}><Gauge size={14} /> 总览</button>
+        <button className={`tab-item ${activeSection === "connect" ? "active" : ""}`} onClick={() => jumpTo("connect")}><PlugZap size={14} /> 连接</button>
+        <button className={`tab-item ${activeSection === "appearance" ? "active" : ""}`} onClick={() => jumpTo("appearance")}><Bot size={14} /> 外观</button>
+        <button className={`tab-item ${activeSection === "behavior" ? "active" : ""}`} onClick={() => jumpTo("behavior")}><MousePointer2 size={14} /> 行为</button>
+        <button className={`tab-item ${activeSection === "animation" ? "active" : ""}`} onClick={() => jumpTo("animation")}><Wand2 size={14} /> 动画</button>
+        <button className={`tab-item ${activeSection === "data" ? "active" : ""}`} onClick={() => jumpTo("data")}><FileText size={14} /> 数据</button>
+      </nav>
 
       <div className="section-content">
+        {/* ===== GENERAL ===== */}
         {activeSection === "general" && <>
-          <section className="hero-panel">
-            <div>
-              <p className="eyebrow">Clawd Companion</p>
-              <h1>{connection.connected ? "Clawd 正在跟随 Claude 会话" : "Clawd 等待 Claude 会话接入"}</h1>
-              <p className="subtle">{connection.connected ? `${connection.activeClientLabel ?? "Claude Code"} 最近在 ${timeAgo(connection.lastEventAt, now)} 发来事件。` : "本地监听已经准备好；打开 Claude CLI 或已配置 hooks 的 Claude Code 会话后会自动连接。"}</p>
-              <div className="hero-status-board">
-                <ConnectionPill connected={connection.connected} label={connection.activeClientLabel} />
-                <code>{shortSession(connection.activeSessionId)}</code>
+          <div className="hero-panel">
+            <div className="hero-text">
+              <h1>{connection.connected ? "正在跟随" : "等待连接"}</h1>
+              <p className="subtle">{connection.connected ? `${connection.activeClientLabel ?? "Claude Code"} — ${timeAgo(connection.lastEventAt, now)}前发来事件` : "打开 Claude Code 会话后自动连接"}</p>
+              <div style={{ display: "flex", gap: 8, marginTop: 10, alignItems: "center" }}>
+                <span className={`status-dot ${connection.connected ? "green" : connection.serverListening ? "amber" : "red"}`} />
+                <span className="connection-pill connected"><i />{connection.connected ? "已连接" : "等待"}</span>
+                <span className="value-badge">{shortSession(connection.activeSessionId)}</span>
               </div>
             </div>
             <div className="mini-stage"><div className="mini-pet"><Clawd key={previewIdleBubble ?? "idle"} state={petState} settings={settings} forceIdleBubble={previewIdleBubble} /></div></div>
-          </section>
+          </div>
 
           {!onboardingDone && (
-            <section className="onboarding-card">
+            <div className="onboarding-card">
               <div className="onboarding-steps">
                 {["欢迎", "连接", "完成"].map((label, i) => (
                   <div key={label} className={`onboarding-step ${i === onboardingStep ? "active" : i < onboardingStep ? "done" : ""}`}>
-                    <span className="onboarding-step-num">{i + 1}</span>
-                    <span>{label}</span>
+                    <span className="onboarding-step-num">{i + 1}</span><span>{label}</span>
                   </div>
                 ))}
               </div>
               <div className="onboarding-content">
-                {onboardingStep === 0 && <>
-                  <h3>欢迎使用 Clawd Companion</h3>
-                  <p>Clawd 是 Claude Code 的桌面宠物伴侣，会在你使用 Claude Code 时实时显示工具调用、会话状态和动画反馈。</p>
-                  <p className="note">接下来只需 2 步即可开始使用。</p>
-                </>}
-                {onboardingStep === 1 && <>
-                  <h3>连接 Claude Code</h3>
-                  <p>点击下方按钮，Clawd 会自动配置 Claude Code 的 hooks，让 Claude Code 把事件发送给 Clawd。</p>
-                  <div className="hooks-manager" style={{ marginTop: 12 }}><HooksManager /></div>
-                </>}
-                {onboardingStep === 2 && <>
-                  <h3>一切就绪</h3>
-                  <p>打开任意 Claude Code 会话，Clawd 会自动跟随。你可以在配置面板中调整桌宠外观、动画和行为。</p>
-                  <p className="note">点击下方按钮开始使用。</p>
-                </>}
+                {onboardingStep === 0 && <><h3>欢迎使用 Clawd Companion</h3><p>Clawd 是 Claude Code 的桌面宠物伴侣，实时显示工具调用和会话状态。</p></>}
+                {onboardingStep === 1 && <><h3>连接 Claude Code</h3><p>点击下方按钮自动配置 hooks，让 Claude Code 把事件发送给 Clawd。</p><div className="hooks-manager" style={{ marginTop: 8 }}><HooksManager /></div></>}
+                {onboardingStep === 2 && <><h3>一切就绪</h3><p>打开任意 Claude Code 会话，Clawd 会自动跟随。</p></>}
               </div>
               <div className="onboarding-actions">
-                {onboardingStep > 0 && <button className="ghost" onClick={() => setOnboardingStep(onboardingStep - 1)}>上一步</button>}
-                <button onClick={() => {
-                  if (onboardingStep < 2) setOnboardingStep(onboardingStep + 1);
-                  else { localStorage.setItem("clawd-onboarding-done", "1"); setOnboardingDone(true); }
-                }}>{onboardingStep < 2 ? "下一步" : "开始使用"}</button>
+                {onboardingStep > 0 && <button className="glow-btn ghost" onClick={() => setOnboardingStep(onboardingStep - 1)}>上一步</button>}
+                <button className="glow-btn" onClick={() => { if (onboardingStep < 2) setOnboardingStep(onboardingStep + 1); else { localStorage.setItem("clawd-onboarding-done", "1"); setOnboardingDone(true); } }}>{onboardingStep < 2 ? "下一步" : "开始"}</button>
               </div>
-            </section>
+            </div>
           )}
 
-          <section className="status-strip">
-            <StatusCard icon={<Radio size={18} />} label="连接状态" value={connection.connected ? "已连接" : connection.serverListening ? "等待会话" : "未监听"} meta={connection.activeClientLabel} tone={connection.connected ? "good" : connection.serverListening ? "wait" : "bad"} />
-            <StatusCard icon={<Timer size={18} />} label="最近事件" value={connection.lastEventAt ? timeAgo(connection.lastEventAt, now) : "还没收到"} tone={connection.lastEventAt ? "good" : "wait"} />
-            <StatusCard icon={<Shield size={18} />} label="会话" value={shortSession(connection.activeSessionId)} tone="neutral" />
-            <StatusCard icon={<MonitorCheck size={18} />} label="本地监听" value={connection.serverListening ? `127.0.0.1:${connection.port}` : "未监听"} tone={connection.serverListening ? "good" : "bad"} />
-          </section>
+          <div className="status-strip">
+            <div className="status-card"><span>连接</span><strong>{connection.connected ? "已连接" : "等待"}</strong></div>
+            <div className="status-card"><span>最近事件</span><strong>{connection.lastEventAt ? timeAgo(connection.lastEventAt, now) : "暂无"}</strong></div>
+            <div className="status-card"><span>会话</span><strong>{shortSession(connection.activeSessionId)}</strong></div>
+            <div className="status-card"><span>端口</span><strong>{connection.port}</strong></div>
+          </div>
+          {connection.error ? <div className="connection-error">{connection.error}</div> : null}
 
-          {connection.error ? <section className="connection-error"><Wrench size={18} />{connection.error}</section> : null}
-
-          <Panel title="最近事件" icon={<Bell size={18} />} wide>
+          <div className="glass-card">
+            <div className="glass-card-header"><Bell size={13} /> 最近事件</div>
             <div className="event-list">
-              {events.length === 0 ? <div className="empty">还没有收到事件。先复制 hooks 配置，或点击测试事件看状态变化。</div> : events.map(event => (
-                <article key={event.id} className="event-row">
-                  <span>{new Date(event.timestamp).toLocaleTimeString()}</span>
-                  <strong>{event.title}</strong>
-                  <p>{event.message}</p>
-                  <small>{timeAgo(event.timestamp, now)}</small>
-                  <em>{stateCopy[stateFromEvent(event)].label}</em>
-                </article>
+              {events.length === 0 ? <div className="empty">等待事件…</div> : events.map(e => (
+                <div key={e.id} className="event-row">
+                  <span>{new Date(e.timestamp).toLocaleTimeString()}</span>
+                  <strong>{e.title}</strong>
+                  <p>{e.message}</p>
+                  <em>{stateCopy[stateFromEvent(e)].label}</em>
+                </div>
               ))}
             </div>
-          </Panel>
-        </>}
-
-        {activeSection === "connect" && <>
-          <GroupCard icon={<PlugZap size={18} />} title="Claude Code 连接">
-            <HooksManager />
-          </GroupCard>
-
-          <GroupCard icon={<Radio size={18} />} title="连接详情">
-            <div className="connection-detail-grid">
-              <ConnectionDetail label="状态" value={connection.connected ? "已连接" : connection.serverListening ? "等待 Claude 会话" : "本地服务未监听"} />
-              <ConnectionDetail label="客户端" value={connection.activeClientLabel ?? "未知客户端"} />
-              <ConnectionDetail label="会话 ID" value={shortSession(connection.activeSessionId)} />
-              <ConnectionDetail label="最后活动" value={connection.lastEventAt ? timeAgo(connection.lastEventAt, now) : "暂无"} />
-            </div>
-          </GroupCard>
-
-          <GroupCard icon={<Shield size={18} />} title="隐私与安全">
-            <div className="settings-columns compact">
-              <section className="settings-group">
-                <Field label="事件端口">
-                  <input value={settings.port} onChange={event => updateSettings({ port: Number(event.target.value) || defaultSettings.port })} />
-                </Field>
-                <Field label="本地 token">
-                  <input value={settings.token} onChange={event => updateSettings({ token: event.target.value })} />
-                </Field>
-              </section>
-              <section className="settings-group">
-                <Segmented value={settings.privacyMode} onChange={privacyMode => updateSettings({ privacyMode })} />
-                <p className="note">安全模式只显示工具类型；标准模式显示文件名和搜索模式；详细模式可显示被截断的命令摘要。</p>
-              </section>
-            </div>
-          </GroupCard>
-        </>}
-
-        {activeSection === "appearance" && <>
-          <GroupCard icon={<Eye size={18} />} title="显示">
-            <Toggle label="启用桌宠" checked={settings.petEnabled} onChange={petEnabled => updateSettings({ petEnabled })} />
-            <Toggle label="始终置顶" checked={settings.alwaysOnTop} onChange={alwaysOnTop => updateSettings({ alwaysOnTop })} />
-            <Toggle label="完全点击穿透" checked={settings.clickThrough} onChange={clickThrough => updateSettings({ clickThrough })} />
-            <Toggle label="显示气泡" checked={settings.showBubbles} onChange={showBubbles => updateSettings({ showBubbles })} />
-            <Toggle label="显示状态图标" checked={settings.showStatusProp} onChange={showStatusProp => updateSettings({ showStatusProp })} />
-            <Toggle label="显示会话标题" checked={settings.showSessionTitle} onChange={showSessionTitle => updateSettings({ showSessionTitle })} />
-            <Toggle label="编辑桌宠位置" checked={settings.editPosition} onChange={editPosition => updateSettings({ editPosition })} />
-            {settings.editPosition ? <button className="inline-action" onClick={() => updateSettings({ positionOffsets: defaultSettings.positionOffsets, zoneSizes: defaultSettings.zoneSizes, clawdScale: defaultSettings.clawdScale, thoughtScale: defaultSettings.thoughtScale, bubbleScale: defaultSettings.bubbleScale, cardScale: defaultSettings.cardScale, petScale: defaultSettings.petScale, viewScale: defaultSettings.viewScale })}>重置全部</button> : null}
-          </GroupCard>
-
-          <div className="section-grid-2col">
-            <GroupCard title="整体缩放">
-              <Slider label="视图缩放" min={0.7} max={1.45} step={0.05} value={settings.petScale} format={v => `${Math.round(v * 100)}%`} onChange={petScale => updateSettings({ petScale })} />
-              <Slider label="视窗缩放" min={0.7} max={2.5} step={0.05} value={settings.viewScale ?? settings.petScale} format={v => `${Math.round(v * 100)}%`} onChange={viewScale => updateSettings({ viewScale })} />
-              <Slider label="整体透明" min={0.45} max={1} step={0.05} value={settings.petOpacity} format={v => `${Math.round(v * 100)}%`} onChange={petOpacity => updateSettings({ petOpacity })} />
-            </GroupCard>
-
-            <GroupCard title="Clawd">
-              <Slider label="尺寸" min={0.7} max={1.35} step={0.05} value={settings.clawdScale} format={v => `${Math.round(v * 100)}%`} onChange={clawdScale => updateSettings({ clawdScale })} />
-              <Slider label="透明" min={0.45} max={1} step={0.05} value={settings.clawdOpacity} format={v => `${Math.round(v * 100)}%`} onChange={clawdOpacity => updateSettings({ clawdOpacity })} />
-            </GroupCard>
-
-            <GroupCard title="思维泡">
-              <Slider label="尺寸" min={0.75} max={1.35} step={0.05} value={settings.thoughtScale} format={v => `${Math.round(v * 100)}%`} onChange={thoughtScale => updateSettings({ thoughtScale })} />
-              <Slider label="透明" min={0.45} max={1} step={0.05} value={settings.thoughtOpacity} format={v => `${Math.round(v * 100)}%`} onChange={thoughtOpacity => updateSettings({ thoughtOpacity })} />
-            </GroupCard>
-
-            <GroupCard title="卡片">
-              <Slider label="尺寸" min={0.75} max={1.25} step={0.05} value={settings.cardScale} format={v => `${Math.round(v * 100)}%`} onChange={cardScale => updateSettings({ cardScale })} />
-              <Slider label="透明" min={0.45} max={1} step={0.05} value={settings.cardOpacity} format={v => `${Math.round(v * 100)}%`} onChange={cardOpacity => updateSettings({ cardOpacity })} />
-            </GroupCard>
-
-            <GroupCard title="气泡 / 工具流">
-              <Slider label="尺寸" min={0.6} max={2} step={0.05} value={settings.bubbleScale} format={v => `${Math.round(v * 100)}%`} onChange={bubbleScale => updateSettings({ bubbleScale })} />
-              <Slider label="透明" min={0.45} max={1} step={0.05} value={settings.bubbleOpacity} format={v => `${Math.round(v * 100)}%`} onChange={bubbleOpacity => updateSettings({ bubbleOpacity })} />
-            </GroupCard>
-
-            <GroupCard title="权限弹窗">
-              <Slider label="尺寸" min={0.4} max={2} step={0.05} value={settings.permissionScale} format={v => `${Math.round(v * 100)}%`} onChange={permissionScale => updateSettings({ permissionScale })} />
-              <Slider label="透明" min={0.45} max={1} step={0.05} value={settings.permissionOpacity} format={v => `${Math.round(v * 100)}%`} onChange={permissionOpacity => updateSettings({ permissionOpacity })} />
-            </GroupCard>
           </div>
         </>}
 
+        {/* ===== CONNECT ===== */}
+        {activeSection === "connect" && <>
+          <div className="glass-card">
+            <div className="glass-card-header"><PlugZap size={13} /> Claude Code 连接</div>
+            <HooksManager />
+          </div>
+          <div className="glass-card">
+            <div className="glass-card-header"><Radio size={13} /> 连接详情</div>
+            <div className="connection-detail-grid">
+              <div className="connection-detail"><span>状态</span><strong>{connection.connected ? "已连接" : "等待"}</strong></div>
+              <div className="connection-detail"><span>客户端</span><strong>{connection.activeClientLabel ?? "—"}</strong></div>
+              <div className="connection-detail"><span>会话</span><strong>{shortSession(connection.activeSessionId)}</strong></div>
+              <div className="connection-detail"><span>最后活动</span><strong>{connection.lastEventAt ? timeAgo(connection.lastEventAt, now) : "暂无"}</strong></div>
+            </div>
+          </div>
+          <div className="glass-card">
+            <div className="glass-card-header"><Shield size={13} /> 隐私与安全</div>
+            <div className="setting-row"><span className="setting-label">事件端口</span><span className="value-badge">{settings.port}</span></div>
+            <div className="setting-row"><span className="setting-label">Token</span><span className="value-badge" style={{ maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis" }}>{settings.token || "—"}</span></div>
+            <div className="setting-row">
+              <span className="setting-label">隐私模式</span>
+              <div className="segmented-pill">
+                {(["safe", "standard", "detailed"] as const).map(m => (
+                  <button key={m} className={settings.privacyMode === m ? "active" : ""} onClick={() => updateSettings({ privacyMode: m })}>
+                    {m === "safe" ? "安全" : m === "standard" ? "标准" : "详细"}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <p className="note">安全：仅工具类型 · 标准：文件名/搜索模式 · 详细：命令摘要</p>
+          </div>
+        </>}
+
+        {/* ===== APPEARANCE ===== */}
+        {activeSection === "appearance" && <>
+          <div className="glass-card">
+            <div className="glass-card-header"><Eye size={13} /> 显示</div>
+            {([
+              ["启用桌宠", settings.petEnabled, (v: boolean) => updateSettings({ petEnabled: v })],
+              ["始终置顶", settings.alwaysOnTop, (v: boolean) => updateSettings({ alwaysOnTop: v })],
+              ["点击穿透", settings.clickThrough, (v: boolean) => updateSettings({ clickThrough: v })],
+              ["显示气泡", settings.showBubbles, (v: boolean) => updateSettings({ showBubbles: v })],
+              ["状态图标", settings.showStatusProp, (v: boolean) => updateSettings({ showStatusProp: v })],
+              ["会话标题", settings.showSessionTitle, (v: boolean) => updateSettings({ showSessionTitle: v })],
+              ["编辑位置", settings.editPosition, (v: boolean) => updateSettings({ editPosition: v })],
+            ] as [string, boolean, (v: boolean) => void][]).map(([label, val, fn], i) => (
+              <div key={i} className="setting-row">
+                <span className="setting-label">{label}</span>
+                <button className={`pill-toggle ${val ? "on" : ""}`} onClick={() => fn(!val)}><span className="pill-knob" /></button>
+              </div>
+            ))}
+            {settings.editPosition && <div style={{ marginTop: 6 }}><button className="inline-action" onClick={() => updateSettings({ positionOffsets: defaultSettings.positionOffsets, zoneSizes: defaultSettings.zoneSizes, clawdScale: defaultSettings.clawdScale, thoughtScale: defaultSettings.thoughtScale, bubbleScale: defaultSettings.bubbleScale, cardScale: defaultSettings.cardScale, petScale: defaultSettings.petScale, viewScale: defaultSettings.viewScale })}>重置全部</button></div>}
+          </div>
+
+          <div className="content-grid">
+            {([
+              ["整体", [["视图缩放", "petScale", 0.7, 1.45], ["窗口缩放", "viewScale", 0.7, 2.5], ["整体透明", "petOpacity", 0.45, 1]]],
+              ["Clawd", [["尺寸", "clawdScale", 0.7, 1.35], ["透明", "clawdOpacity", 0.45, 1]]],
+              ["思维泡", [["尺寸", "thoughtScale", 0.75, 1.35], ["透明", "thoughtOpacity", 0.45, 1]]],
+              ["卡片", [["尺寸", "cardScale", 0.75, 1.25], ["透明", "cardOpacity", 0.45, 1]]],
+              ["气泡", [["尺寸", "bubbleScale", 0.6, 2], ["透明", "bubbleOpacity", 0.45, 1]]],
+              ["权限", [["尺寸", "permissionScale", 0.4, 2], ["透明", "permissionOpacity", 0.45, 1]]],
+            ] as [string, [string, string, number, number][]][]).map(([title, sliders]) => (
+              <div key={title} className="glass-card">
+                <div className="glass-card-header">{title}</div>
+                {sliders.map(([label, key, min, max]) => {
+                  const val = (settings as any)[key] ?? (defaultSettings as any)[key] ?? 1;
+                  return (
+                    <div key={key} className="setting-row">
+                      <span className="setting-label">{label}</span>
+                      <div className="inline-slider">
+                        <input type="range" min={min} max={max} step={0.05} value={val}
+                          style={{ "--slider-fill": `${((val - min) / (max - min)) * 100}%` } as React.CSSProperties}
+                          onChange={e => updateSettings({ [key]: Number(e.target.value) })} />
+                        <span className="slider-value">{Math.round(val * 100)}%</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </>}
+
+        {/* ===== BEHAVIOR ===== */}
         {activeSection === "behavior" && <>
-          <GroupCard icon={<MousePointer2 size={18} />} title="启动">
-            <Toggle label="开机自启" checked={settings.launchAtLogin} onChange={launchAtLogin => updateSettings({ launchAtLogin })} />
-            <Toggle label="Claude Code 启动时自动启动" checked={settings.autoStartWithCli} onChange={autoStartWithCli => updateSettings({ autoStartWithCli })} />
-            <Toggle label="启动时打开配置面板" checked={settings.openSettingsOnStart} onChange={openSettingsOnStart => updateSettings({ openSettingsOnStart })} />
-          </GroupCard>
+          <div className="glass-card">
+            <div className="glass-card-header"><MousePointer2 size={13} /> 启动</div>
+            {([
+              ["开机自启", settings.launchAtLogin, (v: boolean) => updateSettings({ launchAtLogin: v })],
+              ["Claude Code 启动时自动启动", settings.autoStartWithCli, (v: boolean) => updateSettings({ autoStartWithCli: v })],
+              ["启动时打开配置面板", settings.openSettingsOnStart, (v: boolean) => updateSettings({ openSettingsOnStart: v })],
+            ] as [string, boolean, (v: boolean) => void][]).map(([label, val, fn], i) => (
+              <div key={i} className="setting-row">
+                <span className="setting-label">{label}</span>
+                <button className={`pill-toggle ${val ? "on" : ""}`} onClick={() => fn(!val)}><span className="pill-knob" /></button>
+              </div>
+            ))}
+          </div>
 
-          <GroupCard icon={<Bell size={18} />} title="音效">
+          <div className="glass-card">
+            <div className="glass-card-header"><Bell size={13} /> 音效</div>
             <SoundSettingsPanel settings={settings} updateSettings={updateSettings} />
-            <div className="panel-divider" />
-            <Toggle label="完成时系统通知" checked={settings.doneSound} onChange={doneSound => updateSettings({ doneSound })} />
-            <p className="note">完成音效播放音频文件；系统通知在任务栏通知中心显示弹窗。</p>
-          </GroupCard>
+            <div className="setting-row" style={{ marginTop: 8 }}>
+              <span className="setting-label">完成时系统通知</span>
+              <button className={`pill-toggle ${settings.doneSound ? "on" : ""}`} onClick={() => updateSettings({ doneSound: !settings.doneSound })}><span className="pill-knob" /></button>
+            </div>
+            <p className="note">音效播放音频文件；系统通知在任务栏显示弹窗。</p>
+          </div>
 
-          <GroupCard icon={<Timer size={18} />} title="时间">
-            <Slider label="气泡停留" min={3} max={18} step={1} value={settings.bubbleDuration} format={v => `${v} 秒`} onChange={bubbleDuration => updateSettings({ bubbleDuration })} />
-            <Slider label="工具流停留" min={0.3} max={3} step={0.1} value={settings.toolStreamMinDuration} format={v => `${v.toFixed(1)} 秒`} onChange={toolStreamMinDuration => updateSettings({ toolStreamMinDuration })} />
-            <Slider label="事件历史" min={12} max={100} step={4} value={settings.eventHistoryLimit} format={v => `${v} 条`} onChange={eventHistoryLimit => updateSettings({ eventHistoryLimit })} />
-          </GroupCard>
-
-          <GroupCard title="多会话模式">
-            <Toggle label={<span className="toggle-label-with-badge">启用多会话<sup className="beta-badge">测试中</sup></span>} checked={settings.multiSessionEnabled} onChange={multiSessionEnabled => updateSettings({ multiSessionEnabled })} />
-            {settings.multiSessionEnabled && (
-              <Slider label="小 Clawd 缩放" min={0.3} max={0.8} step={0.05} value={settings.companionScale} format={v => `${Math.round(v * 100)}%`} onChange={companionScale => updateSettings({ companionScale })} />
-            )}
-          </GroupCard>
+          <div className="content-grid">
+            <div className="glass-card">
+              <div className="glass-card-header"><Timer size={13} /> 时间</div>
+              {([
+                ["气泡停留", "bubbleDuration", 3, 18, 1, (v: number) => `${v} 秒`],
+                ["工具流", "toolStreamMinDuration", 0.3, 3, 0.1, (v: number) => `${v.toFixed(1)} 秒`],
+                ["事件历史", "eventHistoryLimit", 12, 100, 4, (v: number) => `${v} 条`],
+              ] as [string, string, number, number, number, (v: number) => string][]).map(([label, key, min, max, step, fmt]) => {
+                const val = (settings as any)[key];
+                return (
+                  <div key={key} className="setting-row">
+                    <span className="setting-label">{label}</span>
+                    <div className="inline-slider">
+                      <input type="range" min={min} max={max} step={step} value={val}
+                        style={{ "--slider-fill": `${((val - min) / (max - min)) * 100}%` } as React.CSSProperties}
+                        onChange={e => updateSettings({ [key]: Number(e.target.value) })} />
+                      <span className="slider-value">{fmt(val)}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="glass-card">
+              <div className="glass-card-header"><Bot size={13} /> 多会话</div>
+              <div className="setting-row">
+                <span className="setting-label">启用多会话 <span style={{ fontSize: 9, color: "var(--amber)" }}>BETA</span></span>
+                <button className={`pill-toggle ${settings.multiSessionEnabled ? "on" : ""}`} onClick={() => updateSettings({ multiSessionEnabled: !settings.multiSessionEnabled })}><span className="pill-knob" /></button>
+              </div>
+              {settings.multiSessionEnabled && (
+                <div className="setting-row">
+                  <span className="setting-label">小 Clawd 缩放</span>
+                  <div className="inline-slider">
+                    <input type="range" min={0.3} max={0.8} step={0.05} value={settings.companionScale}
+                      style={{ "--slider-fill": `${((settings.companionScale - 0.3) / 0.5) * 100}%` } as React.CSSProperties}
+                      onChange={e => updateSettings({ companionScale: Number(e.target.value) })} />
+                    <span className="slider-value">{Math.round(settings.companionScale * 100)}%</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </>}
 
+        {/* ===== ANIMATION ===== */}
         {activeSection === "animation" && <>
-          <GroupCard icon={<Sparkles size={18} />} title="待机动画">
+          <div className="glass-card">
+            <div className="glass-card-header"><Sparkles size={13} /> 待机动画</div>
             <IdleAnimSettings config={settings.idleAnim ?? defaultSettings.idleAnim!} onChange={cfg => updateSettings({ idleAnim: cfg })} settings={settings} updateSettings={updateSettings} />
-          </GroupCard>
-
-          <GroupCard icon={<Wand2 size={18} />} title="动作映射">
+          </div>
+          <div className="glass-card">
+            <div className="glass-card-header"><Wand2 size={13} /> 动作映射</div>
             <StateAnimSettings stateAnimations={settings.stateAnimations ?? {}} onChange={sa => updateSettings({ stateAnimations: sa })} />
-          </GroupCard>
+          </div>
         </>}
 
+        {/* ===== DATA ===== */}
         {activeSection === "data" && <>
-          <GroupCard icon={<Gauge size={18} />} title="运行统计">
-            {persistedStats ? <StatsPanel stats={persistedStats} /> : <p className="note">加载中...</p>}
-          </GroupCard>
-
-          <GroupCard icon={<Code2 size={18} />} title="Token 用量">
+          <div className="glass-card">
+            <div className="glass-card-header"><Gauge size={13} /> 运行统计</div>
+            {persistedStats ? <StatsPanel stats={persistedStats} /> : <p className="note">加载中…</p>}
+          </div>
+          <div className="glass-card">
+            <div className="glass-card-header"><Code2 size={13} /> Token 用量</div>
             <TokenPanel />
-          </GroupCard>
-
-          <GroupCard icon={<Play size={18} />} title="测试事件">
+          </div>
+          <div className="glass-card">
+            <div className="glass-card-header"><Play size={13} /> 测试事件</div>
             <div className="test-grid">
-              {sampleEvents.map(event => <button key={`${event.event}-${event.tool ?? "x"}`} onClick={() => test(event)}>{event.title}</button>)}
+              {sampleEvents.map(ev => <button key={`${ev.event}-${ev.tool ?? "x"}`} onClick={() => test(ev)}>{ev.title}</button>)}
               <button onClick={() => window.companion.triggerIdleBubble()}>待机动画</button>
               <button onClick={async () => {
-                const sid1 = "test-" + Math.random().toString(36).slice(2, 8);
-                const sid2 = "test-" + Math.random().toString(36).slice(2, 8);
+                const s1 = "t-" + Math.random().toString(36).slice(2, 6);
+                const s2 = "t-" + Math.random().toString(36).slice(2, 6);
                 const send = (e: CompanionEvent) => window.companion.sendTestEvent(e);
-                await send({ ...makeEvent("session_start", "manual", "会话 1 测试", "前端"), sessionId: sid1, tool: undefined });
-                await send({ ...makeEvent("tool_start", "manual", "读取文件", "package.json"), sessionId: sid1, tool: "Read" as ToolName });
-                await send({ ...makeEvent("session_start", "manual", "会话 2 测试", "后端"), sessionId: sid2, tool: undefined });
-                await send({ ...makeEvent("tool_start", "manual", "执行命令", "npm install"), sessionId: sid2, tool: "Bash" as ToolName });
-              }}>多会话测试</button>
-              <button onClick={async () => {
-                await window.companion.sendTestEvent({ ...makeEvent("done", "manual", "任务完成", "两个会话都结束了"), sessionId: undefined, tool: undefined });
-              }}>结束全部会话</button>
+                await send({ ...makeEvent("session_start", "manual", "会话 1", ""), sessionId: s1 });
+                await send({ ...makeEvent("tool_start", "manual", "读取", ""), sessionId: s1, tool: "Read" as ToolName });
+                await send({ ...makeEvent("session_start", "manual", "会话 2", ""), sessionId: s2 });
+                await send({ ...makeEvent("tool_start", "manual", "执行", ""), sessionId: s2, tool: "Bash" as ToolName });
+              }}>多会话</button>
+              <button onClick={async () => { await window.companion.sendTestEvent({ ...makeEvent("done", "manual", "完成", ""), sessionId: undefined }); }}>结束全部</button>
             </div>
-          </GroupCard>
-
-          <GroupCard icon={<FileText size={18} />} title="配置管理">
-            <div className="settings-columns compact">
-              <section className="settings-group">
-                <div className="command-row compact">
-                  <span>导出当前配置</span>
-                  <button onClick={async () => {
-                    const result = await window.companion.exportSettingsFile();
-                    if (result.ok) { setCopied("export-file"); setTimeout(() => setCopied(null), 2000); }
-                  }}><FileText size={15} />{copied === "export-file" ? "已导出" : "保存到文件"}</button>
-                </div>
-              </section>
-              <section className="settings-group">
-                <div className="command-row compact">
-                  <span>导入配置</span>
-                  <button onClick={async () => {
-                    const result = await window.companion.importSettingsFile();
-                    setCopied(result.ok ? "import-file-ok" : result.error ? "import-file-fail" : "");
-                    if (result.ok) window.location.reload();
-                    setTimeout(() => setCopied(null), 2000);
-                  }}><FileText size={15} />{copied === "import-file-ok" ? "已导入" : copied === "import-file-fail" ? "失败" : "从文件导入"}</button>
-                </div>
-                <p className="note">从 JSON 文件导入配置，会覆盖当前设置。</p>
-              </section>
-            </div>
-          </GroupCard>
-
-          <GroupCard title="数据管理">
-            <div className="settings-columns compact">
-              <section className="settings-group">
-                <div className="command-row compact">
-                  <span>导出统计数据</span>
-                  <button onClick={async () => {
-                    const result = await window.companion.exportStatsFile();
-                    if (result.ok) setCopied("stats-export");
-                    setTimeout(() => setCopied(null), 2000);
-                  }}><FileText size={15} />{copied === "stats-export" ? "已导出" : "保存到文件"}</button>
-                </div>
-              </section>
-              <section className="settings-group">
-                <div className="command-row compact">
-                  <span>导入统计数据</span>
-                  <button onClick={async () => {
-                    const result = await window.companion.importStatsFile();
-                    if (result.ok) window.location.reload();
-                    setCopied(result.ok ? "stats-import-ok" : "stats-import-fail");
-                    setTimeout(() => setCopied(null), 2000);
-                  }}><FileText size={15} />{copied === "stats-import-ok" ? "已导入" : copied === "stats-import-fail" ? "失败" : "从文件导入"}</button>
-                </div>
-                <p className="note">从 JSON 文件导入统计数据，会覆盖当前数据。</p>
-              </section>
-              <section className="settings-group" style={{ gridColumn: "1 / -1" }}>
-                <div className="command-row compact">
-                  <span>清空统计数据</span>
-                  <button className="danger" onClick={async () => {
-                    if (confirm("确定要清空所有统计数据吗？此操作不可恢复。")) {
-                      await window.companion.resetStats();
-                      window.location.reload();
-                    }
-                  }}><X size={15} />清空</button>
-                </div>
-                <p className="note">永久删除所有累计统计数据，此操作不可恢复。</p>
-              </section>
-            </div>
-          </GroupCard>
+          </div>
+          <div className="glass-card">
+            <div className="glass-card-header"><FileText size={13} /> 配置管理</div>
+            <div className="setting-row"><span className="setting-label">导出配置</span><button className="glow-btn ghost" onClick={async () => { const r = await window.companion.exportSettingsFile(); if (r.ok) { setCopied("ef"); setTimeout(() => setCopied(null), 1500); } }}><FileText size={12} />{copied === "ef" ? "已导出" : "保存"}</button></div>
+            <div className="setting-row"><span className="setting-label">导入配置</span><button className="glow-btn ghost" onClick={async () => { const r = await window.companion.importSettingsFile(); if (r.ok) window.location.reload(); }}><FileText size={12} />导入</button></div>
+            <div className="setting-row"><span className="setting-label">导出统计</span><button className="glow-btn ghost" onClick={async () => { const r = await window.companion.exportStatsFile(); if (r.ok) { setCopied("es"); setTimeout(() => setCopied(null), 1500); } }}><FileText size={12} />{copied === "es" ? "已导出" : "保存"}</button></div>
+            <div className="setting-row"><span className="setting-label">导入统计</span><button className="glow-btn ghost" onClick={async () => { const r = await window.companion.importStatsFile(); if (r.ok) window.location.reload(); }}><FileText size={12} />导入</button></div>
+            <div className="setting-row"><span className="setting-label" style={{ color: "var(--red)" }}>清空统计</span><button className="glow-btn danger" onClick={async () => { if (confirm("确定清空？不可恢复。")) { await window.companion.resetStats(); window.location.reload(); } }}><X size={12} />清空</button></div>
+          </div>
         </>}
       </div>
-
       <footer className="version-bar">
         <div className="version-left">
           <span className="version-label">Clawd Companion</span>
