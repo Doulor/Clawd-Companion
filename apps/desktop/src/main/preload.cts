@@ -69,6 +69,7 @@ contextBridge.exposeInMainWorld("companion", {
   },
   getEventHistory: () => ipcRenderer.invoke("events:get-history") as Promise<import("../shared/events.js").EventHistoryEntry[]>,
   clearEventHistory: () => ipcRenderer.invoke("events:clear-history") as Promise<void>,
+  exportEventHistoryFile: () => ipcRenderer.invoke("events:export-file") as Promise<{ ok: boolean; error?: string }>,
   getMonitors: () => ipcRenderer.invoke("display:get-monitors") as Promise<Array<{id: string; bounds: {x: number; y: number; width: number; height: number}; name: string; isPrimary: boolean}>>,
   recordGif: () => ipcRenderer.invoke("gif:record") as Promise<{ok: boolean; message?: string}>,
   saveGif: (dataUrl: string) => ipcRenderer.invoke("gif:save", dataUrl) as Promise<{ok: boolean; error?: string}>,
@@ -135,6 +136,7 @@ declare global {
       onIdleBubbleSync: (callback: (sprite: string | null) => void) => () => void;
       getEventHistory: () => Promise<import("../shared/events.js").EventHistoryEntry[]>;
       clearEventHistory: () => Promise<void>;
+      exportEventHistoryFile: () => Promise<{ ok: boolean; error?: string }>;
       getMonitors: () => Promise<Array<{id: string; bounds: {x: number; y: number; width: number; height: number}; name: string; isPrimary: boolean}>>;
       recordGif: () => Promise<{ok: boolean; message?: string}>;
       saveGif: (dataUrl: string) => Promise<{ok: boolean; error?: string}>;

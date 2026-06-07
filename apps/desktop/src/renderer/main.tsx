@@ -1502,6 +1502,8 @@ function SettingsApp() {
             {settings.editPosition ? <button className="inline-action" onClick={() => updateSettings({ positionOffsets: defaultSettings.positionOffsets, zoneSizes: defaultSettings.zoneSizes, clawdScale: defaultSettings.clawdScale, thoughtScale: defaultSettings.thoughtScale, bubbleScale: defaultSettings.bubbleScale, cardScale: defaultSettings.cardScale, petScale: defaultSettings.petScale, viewScale: defaultSettings.viewScale })}>重置全部</button> : null}
           </GroupCard>
 
+          <MonitorSettings settings={settings} updateSettings={updateSettings} />
+
           <div className="section-grid-2col">
             <GroupCard title="整体缩放">
               <Slider label="视图缩放" min={0.7} max={1.45} step={0.05} value={settings.petScale} format={v => `${Math.round(v * 100)}%`} onChange={petScale => updateSettings({ petScale })} />
@@ -1550,6 +1552,8 @@ function SettingsApp() {
             <p className="note">完成音效播放音频文件；系统通知在任务栏通知中心显示弹窗。</p>
           </GroupCard>
 
+          <NotificationRulesPanel settings={settings} updateSettings={updateSettings} />
+
           <GroupCard icon={<Timer size={18} />} title="时间">
             <Slider label="气泡停留" min={3} max={18} step={1} value={settings.bubbleDuration} format={v => `${v} 秒`} onChange={bubbleDuration => updateSettings({ bubbleDuration })} />
             <Slider label="工具流停留" min={0.3} max={3} step={0.1} value={settings.toolStreamMinDuration} format={v => `${v.toFixed(1)} 秒`} onChange={toolStreamMinDuration => updateSettings({ toolStreamMinDuration })} />
@@ -1591,11 +1595,23 @@ function SettingsApp() {
                 </article>
               ))}
             </div>
+            <div className="command-row compact">
+              <span>导出当前事件历史</span>
+              <button onClick={async () => {
+                const result = await window.companion.exportEventHistoryFile();
+                setCopied(result.ok ? "events-export" : "events-export-fail");
+                setTimeout(() => setCopied(null), 2000);
+              }}><FileText size={15} />{copied === "events-export" ? "已导出" : copied === "events-export-fail" ? "失败" : "保存到文件"}</button>
+            </div>
           </GroupCard>
 
           <GroupCard icon={<Code2 size={18} />} title="Token 用量">
             <TokenPanel />
           </GroupCard>
+
+          <GifRecorderPanel />
+
+          <PluginManagerPanel settings={settings} updateSettings={updateSettings} />
 
           <GroupCard icon={<Play size={18} />} title="测试事件">
             <div className="test-grid">

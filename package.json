@@ -13,7 +13,7 @@
     "start": "electron .",
     "pack": "npm run build && electron-builder --dir",
     "dist": "npm run build && electron-builder",
-    "dist:validate": "node -e \"const fs=require('fs'),yml=require('fs').readFileSync('release/latest.yml','utf8'); const m=yml.match(/url: (.+)/); const f=m&&m[1].trim(); const ex=fs.readdirSync('release').find(x=>x.endsWith('.exe')); if(f&&ex&&f!==ex){console.error('latest.yml 文件名不匹配: '+f+' vs '+ex);process.exit(1)} else {console.log('校验通过: '+ex)}\"",
+    "dist:validate": "node scripts/validate-dist.mjs",
     "typecheck": "tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.preload.json --noEmit && tsc -p tsconfig.json --noEmit && tsc -p apps/hook-forwarder/tsconfig.json --noEmit",
     "version:patch": "node scripts/bump-version.mjs patch",
     "version:minor": "node scripts/bump-version.mjs minor",

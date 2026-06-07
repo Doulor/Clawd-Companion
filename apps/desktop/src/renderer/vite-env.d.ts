@@ -59,6 +59,7 @@ declare global {
       onIdleBubbleSync: (callback: (sprite: string | null) => void) => () => void;
       getEventHistory: () => Promise<import("../shared/events").EventHistoryEntry[]>;
       clearEventHistory: () => Promise<void>;
+      exportEventHistoryFile: () => Promise<{ ok: boolean; error?: string }>;
       getMonitors: () => Promise<Array<{id: string; bounds: {x: number; y: number; width: number; height: number}; name: string; isPrimary: boolean}>>;
       recordGif: () => Promise<{ok: boolean; message?: string}>;
       saveGif: (dataUrl: string) => Promise<{ok: boolean; error?: string}>;

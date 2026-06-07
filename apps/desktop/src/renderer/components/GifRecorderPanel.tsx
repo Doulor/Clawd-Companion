@@ -45,13 +45,13 @@ export function GifRecorderPanel() {
 
   return (
     <div className="panel-group-card">
-      <h3 className="panel-title">{t("gif.title", "GIF Recording")}</h3>
-      <p className="note">{t("gif.hint", "Record desktop pet animation to GIF (5 seconds).")}</p>
+      <h3 className="panel-title">{t("gif.title", "Animation Recording")}</h3>
+      <p className="note">{t("gif.hint", "Record desktop pet animation to WebM video (5 seconds).")}</p>
       <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
         <button className="ghost-btn" onClick={startRecording} disabled={recording}>
           {recording ? t("gif.recording", "Recording... (5s)") : t("gif.record", "Record Animation")}
         </button>
-        {ready && <button className="ghost-btn" onClick={saveGif}>{t("gif.save", "Save as GIF")}</button>}
+        {ready && <button className="ghost-btn" onClick={saveGif}>{t("gif.save", "Save as WebM")}</button>}
       </div>
     </div>
   );

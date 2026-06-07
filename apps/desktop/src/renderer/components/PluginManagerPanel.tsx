@@ -31,11 +31,13 @@ export function PluginManagerPanel({ settings, updateSettings }: { settings: any
       ) : (
         <div style={{ display: "grid", gap: 8 }}>
           {plugins.map(p => (
-            <div key={p.id} className="mapping-row" style={{ gridTemplateColumns: "1fr 1fr auto" }}>
+            <div key={p.id} className="mapping-row" style={{ gridTemplateColumns: "1fr 1.2fr 1fr auto" }}>
               <input type="text" value={p.name} onChange={e => updatePlugin(p.id, { name: e.target.value })}
                 placeholder={t("plugins.name", "Plugin Name")} style={{ background: "transparent", border: "1px solid var(--line)", borderRadius: 4, padding: "4px 8px", color: "var(--ink)" }} />
               <input type="text" value={p.scriptPath} onChange={e => updatePlugin(p.id, { scriptPath: e.target.value })}
                 placeholder={t("plugins.path", "Script Path")} style={{ background: "transparent", border: "1px solid var(--line)", borderRadius: 4, padding: "4px 8px", color: "var(--ink)" }} />
+              <input type="text" value={p.events.join(",")} onChange={e => updatePlugin(p.id, { events: e.target.value.split(",").map(v => v.trim()).filter(Boolean) })}
+                placeholder={t("plugins.events", "Events: done,error")} style={{ background: "transparent", border: "1px solid var(--line)", borderRadius: 4, padding: "4px 8px", color: "var(--ink)" }} />
               <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
                 <Toggle label="" checked={p.enabled} onChange={enabled => updatePlugin(p.id, { enabled })} />
                 <button className="ghost-btn danger" onClick={() => removePlugin(p.id)}>{t("plugins.remove", "Remove")}</button>

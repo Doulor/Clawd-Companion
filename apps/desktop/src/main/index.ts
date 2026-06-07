@@ -7,6 +7,7 @@ import { appendFileSync, readFileSync, writeFileSync, existsSync, mkdirSync, cop
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { homedir } from "node:os";
+import { spawn } from "node:child_process";
 import type { CompanionConnectionStatus, CompanionEvent, CompanionSettings, PermissionPollResult, PermissionResponse, UpdateStatus, AppStats, TokenStats, EventHistoryEntry, NotificationRule, CustomPlugin } from "../shared/events.js";
 import { defaultSettings, defaultStats } from "../shared/events.js";
 import { scanTokenStats, setCachePath as setTokenCachePath } from "./token-stats.js";
@@ -687,6 +688,34 @@ function restartEventServer() {
   eventServer?.close(() => startEventServer());
 }
 
+function runPluginsForEvent(event: CompanionEvent) {
+  const plugins = settings.customPlugins ?? [];
+  for (const plugin of plugins) {
+    if (!plugin.enabled || !plugin.scriptPath || !plugin.events.includes(event.event)) continue;
+    if (!existsSync(plugin.scriptPath)) {
+      logRuntime(`Plugin skipped, script not found: ${plugin.name} (${plugin.scriptPath})`);
+      continue;
+    }
+    const child = spawn(process.execPath, [plugin.scriptPath], {
+      stdio: ["pipe", "pipe", "pipe"],
+      windowsHide: true
+    });
+    const timeout = setTimeout(() => {
+      child.kill();
+      logRuntime(`Plugin timed out: ${plugin.name}`);
+    }, 3000);
+
+    child.stdout.on("data", data => logRuntime(`[plugin:${plugin.name}:stdout] ${String(data).trim()}`));
+    child.stderr.on("data", data => logRuntime(`[plugin:${plugin.name}:stderr] ${String(data).trim()}`));
+    child.on("error", err => logRuntime(`Plugin failed: ${plugin.name}: ${err.message}`));
+    child.on("close", code => {
+      clearTimeout(timeout);
+      logRuntime(`Plugin exited: ${plugin.name} code=${code}`);
+    });
+    child.stdin.end(JSON.stringify(event));
+  }
+}
+
 function emitEvent(event: CompanionEvent) {
   trackEvent(event);
   // Event History
@@ -710,21 +739,21 @@ function emitEvent(event: CompanionEvent) {
   settingsWindow?.webContents.send("companion:event", event);
   wsServer?.clients.forEach(client => client.send(JSON.stringify({ type: "event", payload: event })));
   broadcastConnectionStatus();
+  runPluginsForEvent(event);
 
-  if (settings.doneSound && event.event === "done" && Notification.isSupported()) {
+  const rule = settings.notificationRules?.find(r => r.eventType === event.event && r.enabled);
+  const shouldNotify = rule ? rule.systemNotification : settings.doneSound && event.event === "done";
+  const shouldPlaySound = rule ? rule.playSound : true;
+
+  if (shouldNotify && Notification.isSupported()) {
     new Notification({ title: event.title, body: event.message }).show();
   }
-  // Sound: get data URL and send to renderer for HTML5 Audio playback
-  const soundDataUrl = getSoundDataUrl(event.event, settings.sound);
-  if (soundDataUrl) {
-    petWindow?.webContents.send("companion:play-sound", soundDataUrl);
-    settingsWindow?.webContents.send("companion:play-sound", soundDataUrl);
-    // Notification Rules
-    if (settings.notificationRules?.length) {
-      const rule = settings.notificationRules.find(r => r.eventType === event.event && r.enabled);
-      if (rule && rule.systemNotification && Notification.isSupported()) {
-        new Notification({ title: event.title, body: event.message }).show();
-      }
+
+  if (shouldPlaySound) {
+    const soundDataUrl = getSoundDataUrl(event.event, settings.sound);
+    if (soundDataUrl) {
+      petWindow?.webContents.send("companion:play-sound", soundDataUrl);
+      settingsWindow?.webContents.send("companion:play-sound", soundDataUrl);
     }
   }
 }
@@ -1087,6 +1116,17 @@ ipcMain.handle("stats:import-file", async () => {
 // Event History
 ipcMain.handle("events:get-history", () => eventHistory);
 ipcMain.handle("events:clear-history", () => { eventHistory = []; });
+ipcMain.handle("events:export-file", async () => {
+  const result = await dialog.showSaveDialog({
+    defaultPath: `clawd-events-${new Date().toISOString().slice(0, 10)}.json`,
+    filters: [{ name: "JSON", extensions: ["json"] }]
+  });
+  if (!result.canceled && result.filePath) {
+    writeFileSync(result.filePath, JSON.stringify({ exportedAt: Date.now(), events: eventHistory }, null, 2));
+    return { ok: true };
+  }
+  return { ok: false };
+});
 
 // Display / Monitor
 ipcMain.handle("display:get-monitors", () => {
@@ -1106,15 +1146,15 @@ ipcMain.handle("plugins:save", (_, plugins: CustomPlugin[]) => {
   return settings.customPlugins;
 });
 
-// GIF Recording (placeholder - actual recording happens in renderer)
+// Animation recording: renderer records WebM, main process saves it to disk.
 ipcMain.handle("gif:record", () => ({ ok: true, message: "Recording started in renderer" }));
 ipcMain.handle("gif:save", async (_, dataUrl: string) => {
   const result = await dialog.showSaveDialog({
-    defaultPath: "clawd-animation.gif",
-    filters: [{ name: "GIF", extensions: ["gif"] }]
+    defaultPath: "clawd-animation.webm",
+    filters: [{ name: "WebM Video", extensions: ["webm"] }]
   });
   if (!result.canceled && result.filePath) {
-    const base64Data = dataUrl.replace(/^data:image\/gif;base64,/, "");
+    const base64Data = dataUrl.replace(/^data:video\/webm[^,]*,/, "");
     writeFileSync(result.filePath, Buffer.from(base64Data, "base64"));
     return { ok: true };
   }
