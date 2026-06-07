@@ -2139,6 +2139,93 @@ h1 {
   background: rgba(37, 28, 23, 0.42);
 }
 
+.theme-style-row {
+  display: grid;
+  grid-template-columns: minmax(360px, 1fr) minmax(190px, 240px);
+  gap: 12px;
+  align-items: stretch;
+}
+
+.ui-style-toggle {
+  position: relative;
+  min-width: 0;
+  min-height: 54px;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 6px 13px;
+  border: 1px solid rgba(46, 34, 26, 0.12);
+  border-radius: 999px;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.78), transparent 34%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.58), rgba(255, 248, 221, 0.28));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58), 0 10px 24px rgba(43, 31, 21, 0.08);
+  overflow: hidden;
+  text-align: left;
+}
+
+.ui-style-toggle::before {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, transparent, rgba(234, 187, 88, 0.16));
+  opacity: 0;
+  transition: opacity 260ms var(--ease-soft);
+}
+
+.ui-style-toggle-liquid::before {
+  opacity: 1;
+}
+
+.ui-style-orb {
+  position: relative;
+  z-index: 1;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 30% 24%, rgba(255, 255, 255, 0.88), transparent 30%),
+    linear-gradient(135deg, rgba(234, 187, 88, 0.72), rgba(109, 147, 167, 0.42));
+  box-shadow: 0 8px 18px rgba(43, 31, 21, 0.14), inset 0 0 0 1px rgba(255, 255, 255, 0.48);
+  transition: transform 320ms var(--ease-snap), background 260ms var(--ease-soft);
+}
+
+.ui-style-toggle-liquid .ui-style-orb {
+  transform: rotate(28deg) scale(1.08);
+  background:
+    radial-gradient(circle at 30% 24%, rgba(255, 255, 255, 0.92), transparent 28%),
+    linear-gradient(135deg, rgba(126, 225, 255, 0.78), rgba(182, 140, 255, 0.62) 52%, rgba(255, 214, 120, 0.55));
+}
+
+.ui-style-copy {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.ui-style-copy strong,
+.ui-style-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ui-style-copy strong {
+  font-size: 13px;
+  line-height: 1.1;
+}
+
+.ui-style-copy small {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
 .connection-detail-grid,
 .stats-grid {
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -2336,6 +2423,7 @@ h1 {
 @media (max-width: 920px) {
   .section-content { width: 100%; padding: 16px; }
   .hero-panel { grid-template-columns: 1fr; }
+  .theme-style-row { grid-template-columns: 1fr; }
   .command-row, .command-row.compact { grid-template-columns: 1fr; }
   .version-bar { align-items: flex-start; }
 }
@@ -2701,6 +2789,136 @@ input[type="range"]:active::-webkit-slider-thumb,
 .git-toast-message { color: #fff5d9; opacity: 0.92; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 320px; }
 @keyframes git-toast-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes git-toast-out { from { opacity: 1; } to { opacity: 0; } }
+
+/* === Liquid Glass UI Style === */
+[data-ui-style=liquid] {
+  --paper: #eef6ff;
+  --panel: rgba(255, 255, 255, 0.38);
+  --line: rgba(115, 143, 180, 0.22);
+  --shadow: 0 28px 90px rgba(58, 86, 130, 0.18);
+}
+
+[data-ui-style=liquid] .settings-shell {
+  background:
+    radial-gradient(circle at 12% 12%, rgba(126, 225, 255, 0.34), transparent 28%),
+    radial-gradient(circle at 88% 18%, rgba(182, 140, 255, 0.3), transparent 26%),
+    radial-gradient(circle at 50% 92%, rgba(255, 214, 120, 0.32), transparent 34%),
+    linear-gradient(135deg, #edf8ff 0%, #f7f3ff 46%, #fff8e9 100%);
+}
+
+[data-ui-style=liquid] .settings-shell::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(115deg, rgba(255,255,255,0.38), transparent 28%, rgba(255,255,255,0.24) 62%, transparent),
+    radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4), transparent 18%);
+  mix-blend-mode: soft-light;
+  opacity: 0.85;
+}
+
+[data-ui-style=liquid] .window-bar,
+[data-ui-style=liquid] .tab-bar,
+[data-ui-style=liquid] .version-bar {
+  background: rgba(255, 255, 255, 0.36);
+  border-color: rgba(115, 143, 180, 0.2);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.58), 0 12px 34px rgba(58,86,130,0.08);
+}
+
+[data-ui-style=liquid] .hero-panel,
+[data-ui-style=liquid] .panel,
+[data-ui-style=liquid] .panel-group-card,
+[data-ui-style=liquid] .group-card,
+[data-ui-style=liquid] .onboarding-card,
+[data-ui-style=liquid] .settings-group,
+[data-ui-style=liquid] .status-card,
+[data-ui-style=liquid] .connection-detail,
+[data-ui-style=liquid] .stat-item,
+[data-ui-style=liquid] .event-row,
+[data-ui-style=liquid] .sound-row,
+[data-ui-style=liquid] .command-row,
+[data-ui-style=liquid] .code-card,
+[data-ui-style=liquid] .empty {
+  border-color: rgba(255, 255, 255, 0.42);
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.52), rgba(255,255,255,0.22)),
+    rgba(255,255,255,0.22);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.64), 0 22px 54px rgba(58,86,130,0.12);
+  backdrop-filter: blur(26px) saturate(1.34);
+}
+
+[data-ui-style=liquid] .hero-panel {
+  background:
+    radial-gradient(circle at 82% 22%, rgba(126,225,255,0.3), transparent 26%),
+    radial-gradient(circle at 20% 84%, rgba(255,214,120,0.28), transparent 30%),
+    linear-gradient(135deg, rgba(255,255,255,0.6), rgba(255,255,255,0.26));
+}
+
+[data-ui-style=liquid] .tab-item.active,
+[data-ui-style=liquid] .segmented button.active,
+[data-ui-style=liquid] .feedback-mode-row button.active {
+  background: rgba(255,255,255,0.48);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.7), 0 10px 24px rgba(58,86,130,0.12);
+}
+
+[data-ui-style=liquid] .theme-switch,
+[data-ui-style=liquid] .ui-style-toggle,
+[data-ui-style=liquid] .toggle {
+  background: rgba(255,255,255,0.34);
+  border-color: rgba(255,255,255,0.46);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.66), 0 14px 32px rgba(58,86,130,0.1);
+  backdrop-filter: blur(22px) saturate(1.28);
+}
+
+[data-ui-style=liquid] input,
+[data-ui-style=liquid] pre,
+[data-ui-style=liquid] .event-list {
+  background: rgba(255,255,255,0.28);
+  border-color: rgba(255,255,255,0.42);
+  backdrop-filter: blur(18px) saturate(1.24);
+}
+
+[data-ui-style=liquid] .hero-actions button:not(.ghost),
+[data-ui-style=liquid] .command-row button:not(.danger),
+[data-ui-style=liquid] .code-card-head button,
+[data-ui-style=liquid] .hooks-actions button:not(.danger),
+[data-ui-style=liquid] .test-grid button {
+  color: #173041;
+  background: linear-gradient(135deg, rgba(126,225,255,0.68), rgba(255,214,120,0.58));
+  box-shadow: 0 12px 26px rgba(58,86,130,0.16), inset 0 1px 0 rgba(255,255,255,0.56);
+}
+
+[data-ui-style=liquid][data-theme=dark] {
+  --paper: #101821;
+  --panel: rgba(21, 32, 46, 0.42);
+  --line: rgba(218, 239, 255, 0.18);
+}
+
+[data-ui-style=liquid][data-theme=dark] .settings-shell {
+  background:
+    radial-gradient(circle at 14% 16%, rgba(63, 186, 226, 0.28), transparent 30%),
+    radial-gradient(circle at 86% 18%, rgba(133, 92, 221, 0.24), transparent 28%),
+    radial-gradient(circle at 52% 90%, rgba(240, 196, 95, 0.18), transparent 34%),
+    linear-gradient(135deg, #0d1720 0%, #171426 48%, #201914 100%);
+}
+
+[data-ui-style=liquid][data-theme=dark] .hero-panel,
+[data-ui-style=liquid][data-theme=dark] .panel,
+[data-ui-style=liquid][data-theme=dark] .panel-group-card,
+[data-ui-style=liquid][data-theme=dark] .group-card,
+[data-ui-style=liquid][data-theme=dark] .settings-group,
+[data-ui-style=liquid][data-theme=dark] .status-card,
+[data-ui-style=liquid][data-theme=dark] .connection-detail,
+[data-ui-style=liquid][data-theme=dark] .stat-item,
+[data-ui-style=liquid][data-theme=dark] .event-row,
+[data-ui-style=liquid][data-theme=dark] .sound-row,
+[data-ui-style=liquid][data-theme=dark] .command-row,
+[data-ui-style=liquid][data-theme=dark] .empty {
+  background: linear-gradient(135deg, rgba(218,239,255,0.14), rgba(218,239,255,0.06));
+  border-color: rgba(218,239,255,0.16);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 22px 54px rgba(0,0,0,0.28);
+}
 
 /* === Dark Theme === */
 [data-theme=dark] {

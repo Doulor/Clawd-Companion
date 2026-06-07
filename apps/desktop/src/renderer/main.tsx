@@ -120,6 +120,10 @@ function applyTheme(theme: CompanionSettings["theme"]) {
   document.documentElement.setAttribute("data-theme", "light");
 }
 
+function applyUiStyle(uiStyle: CompanionSettings["uiStyle"]) {
+  document.documentElement.setAttribute("data-ui-style", uiStyle);
+}
+
 const mappingRows: Array<{ source: string; tool?: string; state: PetState; title: string }> = [
   { source: "SessionStart", state: "thinking", title: "会话开始" },
   { source: "UserPromptSubmit", state: "thinking", title: "收到用户输入" },
@@ -471,6 +475,7 @@ function useCompanion() {
     const saved = await window.companion.saveSettings(next);
     setSettings(saved);
     if (next.theme) applyTheme(next.theme);
+    if (next.uiStyle) applyUiStyle(next.uiStyle);
   }
 
   async function respondToPermission(id: string, decision: "allow" | "deny") {
@@ -1480,8 +1485,11 @@ function SettingsApp() {
           <GroupCard icon={<Eye size={18} />} title="显示">
             <section className="settings-group theme-settings-group">
               <h3 className="panel-subtitle">界面主题</h3>
-              <ThemeSegmented value={settings.theme ?? "system"} onChange={theme => updateSettings({ theme })} />
-              <p className="note">选择日间、夜间，或跟随系统深浅色设置。</p>
+              <div className="theme-style-row">
+                <ThemeSegmented value={settings.theme ?? "system"} onChange={theme => updateSettings({ theme })} />
+                <UiStyleToggle value={settings.uiStyle ?? "classic"} onChange={uiStyle => updateSettings({ uiStyle })} />
+              </div>
+              <p className="note">选择日间、夜间或跟随系统；右侧可切换经典 / 液态玻璃界面风格。</p>
             </section>
             <div className="panel-divider" />
             <Toggle label="启用桌宠" checked={settings.petEnabled} onChange={petEnabled => updateSettings({ petEnabled })} />
@@ -1897,6 +1905,19 @@ function ThemeSegmented({ value, onChange }: { value: CompanionSettings["theme"]
         </button>
       ))}
     </div>
+  );
+}
+
+function UiStyleToggle({ value, onChange }: { value: CompanionSettings["uiStyle"]; onChange: (value: CompanionSettings["uiStyle"]) => void }) {
+  const next = value === "liquid" ? "classic" : "liquid";
+  return (
+    <button className={`ui-style-toggle ui-style-toggle-${value}`} type="button" onClick={() => onChange(next)}>
+      <span className="ui-style-orb" />
+      <span className="ui-style-copy">
+        <strong>{value === "liquid" ? "液态玻璃" : "经典风格"}</strong>
+        <small>{value === "liquid" ? "点击返回经典" : "点击切换新界面"}</small>
+      </span>
+    </button>
   );
 }
 
@@ -2507,6 +2528,7 @@ function App() {
 
   React.useEffect(() => {
     document.documentElement.setAttribute("data-theme", "light");
+    document.documentElement.setAttribute("data-ui-style", "classic");
     let themeMode: CompanionSettings["theme"] = "system";
     const media = window.matchMedia("(prefers-color-scheme: dark)");
     const onSystemThemeChange = () => {
@@ -2518,6 +2540,7 @@ function App() {
         const settings = await window.companion.getSettings();
         themeMode = settings.theme || "system";
         applyTheme(themeMode);
+        applyUiStyle(settings.uiStyle || "classic");
       } catch {}
     };
 

@@ -152,6 +152,7 @@ export interface CompanionSettings {
   autoStartWithCli: boolean;
   doneSound: boolean;
   theme: "light" | "dark" | "system";
+  uiStyle: "classic" | "liquid";
   language: "zh" | "en";
   autoStartDelay: number;
   autoStartMinimized: boolean;
@@ -346,6 +347,7 @@ export const defaultSettings: CompanionSettings = {
   autoStartWithCli: false,
   doneSound: false,
   theme: "system",
+  uiStyle: "classic",
   language: "zh",
   autoStartDelay: 0,
   autoStartMinimized: false,
