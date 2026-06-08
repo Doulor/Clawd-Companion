@@ -1449,8 +1449,13 @@ input[type="range"]:focus { box-shadow: none; }
   background: rgba(217, 107, 90, 0.2);
 }
 
-/* Sources panel — one card per provider */
-.sources-panel { display: grid; gap: 14px; }
+/* Sources panel — one card per provider, side by side like other settings */
+.sources-panel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  align-items: start;
+}
 .source-card {
   display: grid;
   gap: 12px;
@@ -1465,6 +1470,9 @@ input[type="range"]:focus { box-shadow: none; }
 .source-card .hooks-detail { margin-top: 0; }
 .source-card .hooks-actions { margin-top: 4px; }
 .source-card .hooks-result { margin-top: 0; }
+@media (max-width: 640px) {
+  .sources-panel { grid-template-columns: 1fr; }
+}
 .hooks-result {
   margin: 8px 0 0;
   padding: 8px 12px;
