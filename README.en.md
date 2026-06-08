@@ -60,9 +60,17 @@
 
 Both completion and error states get their own distinct animations paired with bubble/card feedback so you notice the result immediately.
 
+<div align="center">
+  <img src="README-ICON/9c20bcfa-454e-40c4-ae42-e38ea104369d.png" width="240" alt="Clawd done — green checkmark + notification card" />
+</div>
+
 ### Git status awareness
 
 Watches your project `.git` in real time. `commit` / `checkout` / `merge` and similar actions surface as capsule popups that don't interrupt your flow.
+
+<div align="center">
+  <img src="README-ICON/c4e6d373-194f-49f2-94f6-1dc71be15db2.png" width="280" alt="Git status capsule — commit popup" />
+</div>
 
 ### Token usage dashboard
 
@@ -72,6 +80,10 @@ Scans session data under `~/.claude/projects`:
 - Monthly calendar heatmap for the last 12 months
 - Per-model token ranking (Top 5 by default, expandable to all)
 
+<div align="center">
+  <img src="README-ICON/644288fe-7301-4a1d-95b8-39110fde755b.png" width="560" alt="Token usage dashboard — heatmap + model breakdown" />
+</div>
+
 ### Sound system
 
 Configurable event-triggered sounds with built-in clips and custom `WAV / MP3 / OGG / FLAC` support:
@@ -79,6 +91,22 @@ Configurable event-triggered sounds with built-in clips and custom `WAV / MP3 / 
 - Four trigger events: done, error, permission request, session start
 - Each event can be enabled/disabled and replaced independently
 - Powered by the HTML5 Audio API — no external dependencies
+
+### Multi-session mode
+
+Track multiple Claude Code sessions simultaneously — the main Clawd follows the first session while mini Clawds appear around it, each independently showing its own status with tool stream ribbons.
+
+<div align="center">
+  <img src="README-ICON/a3fe425f-aee1-420d-aea5-f50133afb42a.png" width="560" alt="Multi-session mode — multiple Clawds with tool stream ribbons" />
+</div>
+
+### Idle animation
+
+Configurable animation pool, playback interval, and repeat count; each Clawd (main + 3 companions) can independently choose a fixed animation or use the pool for random playback.
+
+<div align="center">
+  <img src="README-ICON/b65b9943-aa72-4056-970b-3f76dc826e65.png" width="560" alt="Idle animation settings — animation pool + interval config" />
+</div>
 
 ### Auto-start with Claude Code
 
@@ -107,6 +135,10 @@ CLAWD_COMPANION_AUTOSTART=0   # force off
 ## Usage
 
 After launching, Clawd lives on your screen as a transparent overlay. Most controls live in the right-click menu and the Settings panel.
+
+<div align="center">
+  <img src="README-ICON/055a36bb-b7a1-481d-8ffc-b83229147dfb.png" width="640" alt="Settings panel overview — connection status + desktop pet" />
+</div>
 
 | Section | Capabilities |
 | --- | --- |

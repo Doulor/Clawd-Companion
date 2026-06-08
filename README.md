@@ -42,9 +42,17 @@
 
 完成和错误状态会用专属动画高亮，配合气泡/卡片反馈，立刻知道结果。
 
+<div align="center">
+  <img src="README-ICON/9c20bcfa-454e-40c4-ae42-e38ea104369d.png" width="240" alt="Clawd 完成状态 — 绿色对勾 + 通知卡片" />
+</div>
+
 ### Git 状态感知
 
 实时监听项目 `.git` 变更，`commit` / `checkout` / `merge` 等操作以胶囊浮窗形式即时提示，不打断工作流。
+
+<div align="center">
+  <img src="README-ICON/c4e6d373-194f-49f2-94f6-1dc71be15db2.png" width="280" alt="Git 状态感知 — commit 胶囊浮窗" />
+</div>
 
 ### Token 用量看板
 
@@ -54,6 +62,10 @@
 - 近 12 个月按月日历热力图
 - 按模型拆分的 Token 排行（默认 Top 5，可展开查看全部）
 
+<div align="center">
+  <img src="README-ICON/644288fe-7301-4a1d-95b8-39110fde755b.png" width="560" alt="Token 用量看板 — 热力图 + 模型排行" />
+</div>
+
 ### 音效系统
 
 可配置的事件触发音效，支持内置和自定义 `WAV / MP3 / OGG / FLAC`：
@@ -61,6 +73,22 @@
 - 完成、错误、权限请求、会话开始 4 种触发事件
 - 每个事件可独立开关
 - 基于 HTML5 Audio API，无需外部依赖
+
+### 多会话模式
+
+同时跟踪多个 Claude Code 会话，主 Clawd 跟随第一个会话，小 Clawd 环绕在周围各自独立显示状态，每个都带有工具流光动效。
+
+<div align="center">
+  <img src="README-ICON/a3fe425f-aee1-420d-aea5-f50133afb42a.png" width="560" alt="多会话模式 — 多个 Clawd + 工具流光动效" />
+</div>
+
+### 待机动画
+
+可配置动画池、播放间隔和每次播放次数；每个 Clawd（主 Clawd + 3 个小 Clawd）可独立选择固定动画或使用动画池随机播放。
+
+<div align="center">
+  <img src="README-ICON/b65b9943-aa72-4056-970b-3f76dc826e65.png" width="560" alt="待机动画设置 — 动画池 + 播放间隔配置" />
+</div>
 
 ### Claude Code 启动时自动启动
 
@@ -84,6 +112,10 @@
 ## 使用
 
 启动后 Clawd 默认以透明桌宠形式停留在屏幕上，主要操作都在右键菜单和设置面板中完成。
+
+<div align="center">
+  <img src="README-ICON/055a36bb-b7a1-481d-8ffc-b83229147dfb.png" width="640" alt="设置面板总览 — 连接状态 + 桌宠跟随" />
+</div>
 
 | 区域 | 能力 |
 | --- | --- |
