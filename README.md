@@ -13,23 +13,6 @@
 
 </div>
 
-## 预览
-
-<div align="center">
-  <img src="README-ICON/thinking.png" width="340" alt="Clawd 正在思考" />
-  &nbsp;
-  <img src="README-ICON/thinking-card.png" width="240" alt="会话开始通知卡片" />
-</div>
-
-<div align="center">
-  <img src="README-ICON/edit-tool.png" width="340" alt="Clawd 工作中 — Edit 工具" />
-</div>
-
-<div align="center">
-  <img src="README-ICON/done.png" width="220" alt="Clawd 完成" />
-  &nbsp;
-  <img src="README-ICON/error.png" width="220" alt="Clawd 出错" />
-</div>
 
 ## 目录
 
