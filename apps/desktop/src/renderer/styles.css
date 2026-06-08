@@ -1444,6 +1444,209 @@ input[type="range"]:focus { box-shadow: none; }
 .hooks-actions button.danger:hover:not(:disabled) {
   background: rgba(217, 107, 90, 0.2);
 }
+
+/* Sources panel — one card per provider */
+.sources-panel { display: grid; gap: 14px; }
+.sources-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 14px;
+}
+.source-card {
+  --card-accent: var(--steel);
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  box-shadow: 0 10px 28px rgba(43, 31, 21, 0.06);
+  position: relative;
+  overflow: hidden;
+}
+.source-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: var(--card-accent);
+  opacity: 0.85;
+}
+.source-card.accent-claude { --card-accent: #d97757; }
+.source-card.accent-codex { --card-accent: #10b981; }
+.source-card.accent-neutral { --card-accent: var(--steel); }
+.source-card[data-tone="good"] { box-shadow: 0 10px 28px rgba(43, 31, 21, 0.06), inset 0 0 0 1px rgba(16, 185, 129, 0.18); }
+.source-card[data-tone="wait"] { box-shadow: 0 10px 28px rgba(43, 31, 21, 0.06), inset 0 0 0 1px rgba(232, 184, 90, 0.3); }
+.source-card[data-tone="bad"]  { box-shadow: 0 10px 28px rgba(43, 31, 21, 0.06), inset 0 0 0 1px rgba(217, 107, 90, 0.32); }
+
+.source-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.source-card-id { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.source-card-id h4 { margin: 0; font-size: 16px; font-weight: 800; color: var(--ink); }
+.source-card-id .note { font-size: 12px; color: var(--muted); display: block; }
+.source-card-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--card-accent);
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.status-pill.good { background: rgba(16, 185, 129, 0.18); color: #0d8a5f; }
+.status-pill.wait { background: rgba(232, 184, 90, 0.25); color: #946a1d; }
+.status-pill.bad,
+.status-pill.neutral { background: rgba(217, 107, 90, 0.18); color: #b14a36; }
+
+.source-card-meta {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+}
+.source-card-meta > div { display: grid; gap: 4px; }
+.source-card-meta dt {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  margin: 0;
+}
+.source-card-meta dd {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ink);
+}
+.source-card-meta dd.ok { color: #0d8a5f; }
+.source-card-meta dd.bad { color: #b14a36; flex-wrap: wrap; }
+.source-card-meta dd code.path {
+  font-size: 11px;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 2px 6px;
+  border-radius: 4px;
+  word-break: break-all;
+}
+
+.source-progress {
+  flex: 1;
+  min-width: 80px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.07);
+  overflow: hidden;
+}
+.source-progress span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--card-accent);
+  transition: width .25s ease;
+}
+.source-progress.bad span { background: var(--coral); }
+.source-progress.wait span { background: var(--honey); }
+
+.source-card-missing {
+  font-size: 12px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: rgba(232, 184, 90, 0.08);
+}
+.source-card-missing summary {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  color: #946a1d;
+  list-style: none;
+}
+.source-card-missing summary::-webkit-details-marker { display: none; }
+.source-card-missing[open] summary svg { transform: rotate(90deg); }
+.source-card-missing summary svg { transition: transform .2s ease; }
+.source-card-missing ul {
+  margin: 8px 0 0;
+  padding: 0 0 0 16px;
+  display: grid;
+  gap: 2px;
+  color: var(--ink);
+}
+.source-card-missing code {
+  font-size: 11px;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.source-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+  margin-top: 4px;
+}
+.source-card-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.source-card-actions button.primary { flex: 1 1 auto; }
+.spin { animation: spin 0.9s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.source-card-result {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 6px 10px;
+  font-size: 12px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.04);
+}
+.source-card-result.ok { color: #0d8a5f; }
+.source-card-result.bad { color: #b14a36; }
+
+[data-theme=dark] .source-card { background: rgba(34, 28, 22, 0.6); }
+[data-theme=dark] .source-card[data-tone="good"] { box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(16, 185, 129, 0.28); }
+[data-theme=dark] .source-card[data-tone="wait"] { box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(232, 184, 90, 0.4); }
+[data-theme=dark] .source-card[data-tone="bad"]  { box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(217, 107, 90, 0.42); }
+[data-theme=dark] .source-card-meta dd code.path { background: rgba(255, 255, 255, 0.08); }
+[data-theme=dark] .source-card-result { background: rgba(255, 255, 255, 0.06); }
+[data-theme=dark] .source-progress { background: rgba(255, 255, 255, 0.08); }
+
+[data-ui-style=liquid] .source-card { backdrop-filter: blur(18px); }
+[data-ui-style=liquid] .source-card-icon { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18); }
+[data-ui-style=liquid] .source-card-actions button.primary {
+  background: var(--card-accent);
+  color: #fff;
+  border: 1px solid transparent;
+}
+[data-ui-style=liquid] .source-card-actions button.primary:hover:not(:disabled) {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+}
 .hooks-result {
   margin: 8px 0 0;
   padding: 8px 12px;
