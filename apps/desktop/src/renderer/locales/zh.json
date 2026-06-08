@@ -277,7 +277,8 @@
   },
   "hooks": {
     "title": "Hook 管理",
-    "installed": "已安装到 Claude Code",
+    "installed": "已安装",
+    "installedToProvider": "已安装到 {provider}",
     "notInstalled": "未安装",
     "configExists": "配置文件存在",
     "missingEvents": "缺失事件",

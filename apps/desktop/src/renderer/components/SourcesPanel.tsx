@@ -74,7 +74,11 @@ export function SourcesPanel() {
                 <small className="note">{meta.tagline}</small>
               </div>
               <span className={`status-pill ${tone}`}>
-                {status.installed ? t("hooks.installed", "已安装") : status.configExists ? t("doctor.partial", "部分安装") : t("hooks.notInstalled", "未安装")}
+                {status.installed
+                  ? t("hooks.installedToProvider", "已安装到 {provider}").replace("{provider}", meta.label)
+                  : status.configExists
+                  ? t("doctor.partial", "部分安装")
+                  : t("hooks.notInstalled", "未安装")}
               </span>
             </div>
             <div className="hooks-detail">

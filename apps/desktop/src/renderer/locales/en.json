@@ -277,7 +277,8 @@
   },
   "hooks": {
     "title": "Hook management",
-    "installed": "Installed in Claude Code",
+    "installed": "Installed",
+    "installedToProvider": "Installed for {provider}",
     "notInstalled": "Not installed",
     "configExists": "Config file exists",
     "missingEvents": "Missing events",

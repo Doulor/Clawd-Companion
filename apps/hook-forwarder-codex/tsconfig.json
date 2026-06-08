@@ -8,7 +8,8 @@
     "skipLibCheck": true,
     "esModuleInterop": true,
     "outDir": "../../dist/hook-forwarder-codex",
+    "rootDir": "src",
     "types": ["node"]
   },
-  "include": ["src", "../hook-forwarder-core/src"]
+  "include": ["src"]
 }
