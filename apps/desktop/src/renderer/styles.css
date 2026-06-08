@@ -1316,6 +1316,14 @@ input[type="range"]:focus { box-shadow: none; }
 .note, .launch-note { margin: 14px 0 0; color: var(--muted); line-height: 1.55; font-size: 13px; }
 .launch-note { padding: 12px; border-radius: 8px; background: rgba(69, 105, 123, 0.09); }
 .inline-action { display: inline-flex; align-items: center; min-height: 28px; margin-left: 8px; padding: 0 9px; border-radius: 6px; color: #fff4d7; background: var(--black); }
+.management-action-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.management-action-card { min-height: 118px; display: flex; flex-direction: column; justify-content: space-between; gap: 14px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.34); }
+.management-action-card strong { display: block; color: var(--ink); font-size: 14px; font-weight: 850; }
+.management-action-card p { margin: 6px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.management-action-card button { align-self: flex-start; min-height: 30px; display: inline-flex; align-items: center; gap: 6px; padding: 0 12px; border-radius: 8px; color: #fff4d7; background: var(--black); font-size: 12px; font-weight: 800; }
+.management-action-card.warning { background: rgba(255,248,221,.42); }
+.management-action-card.danger { border-color: rgba(212,90,90,.26); background: rgba(212,90,90,.06); }
+.management-action-card button.danger { background: var(--coral); color: #fff8ef; }
 .mapping-list { display: grid; gap: 9px; }
 .mapping-row { min-height: 44px; display: grid; grid-template-columns: 1fr 28px 92px; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: rgba(255, 255, 255, 0.42); }
 .mapping-row strong { display: block; font-size: 13px; }

@@ -472,16 +472,16 @@ export const defaultSettings: CompanionSettings = {
   eventHistoryLimit: 40,
   positionOffsets: {
     clawd: { x: 707, y: -61 },
-    bubble: { x: 708, y: -45 },
+    bubble: { x: 682, y: -71 },
     ribbon: { x: 677, y: -80 },
-    permission: { x: 678, y: -173 },
+    permission: { x: 407, y: 83 },
     companion: { x: 80, y: -120 },
-    companion0: { x: 587, y: 37 },
-    companion1: { x: 497, y: 37 },
-    companion2: { x: 408, y: 37 },
+    companion0: { x: 587, y: -18 },
+    companion1: { x: 500, y: -17 },
+    companion2: { x: 413, y: -17 },
     pomodoro: { x: 735, y: -5 },
     view: { x: 41, y: -13 },
-    gitToast: { x: 682, y: 52 }
+    gitToast: { x: 676, y: 39 }
   },
   zoneSizes: {},
   idleAnim: {

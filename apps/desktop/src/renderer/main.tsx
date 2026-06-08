@@ -1723,66 +1723,68 @@ function SettingsApp() {
           </GroupCard>
 
           <GroupCard icon={<FileText size={18} />} title={t("sections.configManagement", "配置管理")}>
-            <div className="settings-columns compact">
-              <section className="settings-group">
-                <div className="command-row compact">
-                  <span>{t("data.exportConfig", "导出当前配置")}</span>
-                  <button onClick={async () => {
-                    const result = await window.companion.exportSettingsFile();
-                    if (result.ok) { setCopied("export-file"); setTimeout(() => setCopied(null), 2000); }
-                  }}><FileText size={15} />{copied === "export-file" ? t("common.exported", "已导出") : t("common.saveToFile", "保存到文件")}</button>
+            <div className="management-action-grid">
+              <section className="management-action-card">
+                <div>
+                  <strong>{t("data.exportConfig", "导出当前配置")}</strong>
+                  <p>{t("data.exportConfigNote", "将当前应用设置保存为 JSON 文件，方便备份或迁移。")}</p>
                 </div>
+                <button onClick={async () => {
+                  const result = await window.companion.exportSettingsFile();
+                  if (result.ok) { setCopied("export-file"); setTimeout(() => setCopied(null), 2000); }
+                }}><FileText size={15} />{copied === "export-file" ? t("common.exported", "已导出") : t("common.saveToFile", "保存到文件")}</button>
               </section>
-              <section className="settings-group">
-                <div className="command-row compact">
-                  <span>{t("data.importConfig", "导入配置")}</span>
-                  <button onClick={async () => {
-                    const result = await window.companion.importSettingsFile();
-                    setCopied(result.ok ? "import-file-ok" : result.error ? "import-file-fail" : "");
-                    if (result.ok) window.location.reload();
-                    setTimeout(() => setCopied(null), 2000);
-                  }}><FileText size={15} />{copied === "import-file-ok" ? t("common.imported", "已导入") : copied === "import-file-fail" ? t("common.failed", "失败") : t("data.importConfig", "从文件导入")}</button>
+              <section className="management-action-card warning">
+                <div>
+                  <strong>{t("data.importConfig", "导入配置")}</strong>
+                  <p>{t("data.importConfigNote", "从 JSON 文件导入配置，会覆盖当前设置。")}</p>
                 </div>
-                <p className="note">{t("data.importConfigNote", "从 JSON 文件导入配置，会覆盖当前设置。")}</p>
+                <button onClick={async () => {
+                  const result = await window.companion.importSettingsFile();
+                  setCopied(result.ok ? "import-file-ok" : result.error ? "import-file-fail" : "");
+                  if (result.ok) window.location.reload();
+                  setTimeout(() => setCopied(null), 2000);
+                }}><FileText size={15} />{copied === "import-file-ok" ? t("common.imported", "已导入") : copied === "import-file-fail" ? t("common.failed", "失败") : t("common.import", "导入")}</button>
               </section>
             </div>
           </GroupCard>
 
           <GroupCard title={t("sections.dataManagement", "数据管理")}>
-            <div className="settings-columns compact">
-              <section className="settings-group">
-                <div className="command-row compact">
-                  <span>{t("data.exportStats", "导出统计数据")}</span>
-                  <button onClick={async () => {
-                    const result = await window.companion.exportStatsFile();
-                    if (result.ok) setCopied("stats-export");
-                    setTimeout(() => setCopied(null), 2000);
-                  }}><FileText size={15} />{copied === "stats-export" ? t("common.exported", "已导出") : t("common.saveToFile", "保存到文件")}</button>
+            <div className="management-action-grid">
+              <section className="management-action-card">
+                <div>
+                  <strong>{t("data.exportStats", "导出统计数据")}</strong>
+                  <p>{t("data.exportStatsNote", "将累计运行统计保存为 JSON 文件。")}</p>
                 </div>
+                <button onClick={async () => {
+                  const result = await window.companion.exportStatsFile();
+                  if (result.ok) setCopied("stats-export");
+                  setTimeout(() => setCopied(null), 2000);
+                }}><FileText size={15} />{copied === "stats-export" ? t("common.exported", "已导出") : t("common.saveToFile", "保存到文件")}</button>
               </section>
-              <section className="settings-group">
-                <div className="command-row compact">
-                  <span>{t("data.importStats", "导入统计数据")}</span>
-                  <button onClick={async () => {
-                    const result = await window.companion.importStatsFile();
-                    if (result.ok) window.location.reload();
-                    setCopied(result.ok ? "stats-import-ok" : "stats-import-fail");
-                    setTimeout(() => setCopied(null), 2000);
-                  }}><FileText size={15} />{copied === "stats-import-ok" ? t("common.imported", "已导入") : copied === "stats-import-fail" ? t("common.failed", "失败") : t("data.importStats", "从文件导入")}</button>
+              <section className="management-action-card warning">
+                <div>
+                  <strong>{t("data.importStats", "导入统计数据")}</strong>
+                  <p>{t("data.importStatsNote", "从 JSON 文件导入统计数据，会覆盖当前数据。")}</p>
                 </div>
-                <p className="note">{t("data.importStatsNote", "从 JSON 文件导入统计数据，会覆盖当前数据。")}</p>
+                <button onClick={async () => {
+                  const result = await window.companion.importStatsFile();
+                  if (result.ok) window.location.reload();
+                  setCopied(result.ok ? "stats-import-ok" : "stats-import-fail");
+                  setTimeout(() => setCopied(null), 2000);
+                }}><FileText size={15} />{copied === "stats-import-ok" ? t("common.imported", "已导入") : copied === "stats-import-fail" ? t("common.failed", "失败") : t("common.import", "导入")}</button>
               </section>
-              <section className="settings-group" style={{ gridColumn: "1 / -1" }}>
-                <div className="command-row compact">
-                  <span>{t("data.clearStats", "清空统计数据")}</span>
-                  <button className="danger" onClick={async () => {
-                    if (confirm(t("data.clearStatsConfirm", "确定要清空所有统计数据吗？此操作不可恢复。"))) {
-                      await window.companion.resetStats();
-                      window.location.reload();
-                    }
-                  }}><X size={15} />{t("common.clear", "清空")}</button>
+              <section className="management-action-card danger">
+                <div>
+                  <strong>{t("data.clearStats", "清空统计数据")}</strong>
+                  <p>{t("data.clearStatsNote", "永久删除所有累计统计数据，此操作不可恢复。")}</p>
                 </div>
-                <p className="note">{t("data.clearStatsNote", "永久删除所有累计统计数据，此操作不可恢复。")}</p>
+                <button className="danger" onClick={async () => {
+                  if (confirm(t("data.clearStatsConfirm", "确定要清空所有统计数据吗？此操作不可恢复。"))) {
+                    await window.companion.resetStats();
+                    window.location.reload();
+                  }
+                }}><X size={15} />{t("common.clear", "清空")}</button>
               </section>
             </div>
           </GroupCard>
