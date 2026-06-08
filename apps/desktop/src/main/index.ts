@@ -6,7 +6,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { homedir } from "node:os";
 import { spawn } from "node:child_process";
-import type { CompanionConnectionStatus, CompanionEvent, CompanionSettings, PermissionPollResult, PermissionResponse, UpdateStatus, AppStats, CustomPlugin, PluginMarketIndex, PluginRunRecord } from "../shared/events.js";
+import type { CompanionConnectionStatus, CompanionEvent, CompanionSettings, PermissionResponse, UpdateStatus, AppStats, CustomPlugin, PluginMarketIndex, PluginRunRecord } from "../shared/events.js";
 import { defaultSettings, defaultStats } from "../shared/events.js";
 import { scanTokenStats, setCachePath as setTokenCachePath } from "./token-stats.js";
 import { setGitEventHandler, startGitWatcher, stopGitWatcher } from "./git-watcher.js";
@@ -19,6 +19,7 @@ import { checkHooks as checkManagedHooks, installHooks as installManagedHooks, n
 import { getProvider, type Provider } from "../shared/providers.js";
 import { createAutoUpdaterController } from "./auto-updater.js";
 import { writeJsonAtomic } from "./atomic-json.js";
+import { PermissionBroker } from "./permission-broker.js";
 import { bearerToken, isCompanionEvent, isPermissionRoute, isRoute, jsonBodyErrorStatus, parseJsonBody, parsePermissionRequestBody, streamToken, writeJson } from "./event-server.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -179,21 +180,7 @@ function trackEvent(event: CompanionEvent) {
 
 let saveStatsDebounce: ReturnType<typeof setTimeout> | null = null;
 
-interface PendingPermission {
-  id: string;
-  toolName: string;
-  toolDetail?: string;
-  sessionId?: string;
-  timestamp: number;
-  rawPayload: Record<string, unknown>;
-  status: "pending" | "approved" | "denied" | "expired";
-  decision?: "allow" | "deny";
-  reason?: string;
-  resolve: (result: PermissionPollResult) => void;
-  timeout: ReturnType<typeof setTimeout>;
-}
-
-const pendingPermissions = new Map<string, PendingPermission>();
+const permissionBroker = new PermissionBroker();
 
 function ensureDataDir() {
   if (!existsSync(appDataDir)) mkdirSync(appDataDir, { recursive: true });
@@ -498,50 +485,32 @@ function startEventServer() {
             writeJson(res, 400, { ok: false, error: "invalid_permission_request" });
             return;
           }
-          const { randomUUID } = await import("node:crypto");
-          const id = randomUUID();
 
-          let resolve!: (result: PermissionPollResult) => void;
-
-          const pending: PendingPermission = {
-            id,
+          const { id } = permissionBroker.create({
             toolName: body.toolName,
             toolDetail: body.toolDetail,
             sessionId: body.sessionId,
-            timestamp: Date.now(),
-            rawPayload: body.rawPayload,
-            status: "pending",
-            resolve,
-            timeout: setTimeout(() => {
-              const p = pendingPermissions.get(id);
-              if (p && p.status === "pending") {
-                p.status = "expired";
-                p.resolve({ status: "expired", reason: "Timeout" });
-                pendingPermissions.delete(id);
-                petWindow?.webContents.send("companion:permission-resolved", { id, status: "expired" });
-                settingsWindow?.webContents.send("companion:permission-resolved", { id, status: "expired" });
-              }
-            }, 120_000)
-          };
-
-          pendingPermissions.set(id, pending);
+            rawPayload: body.rawPayload
+          });
+          const created = permissionBroker.get(id);
+          const timestamp = created?.timestamp ?? Date.now();
 
           // 广播给渲染进程
           petWindow?.webContents.send("companion:permission-request", {
             id,
-            toolName: pending.toolName,
-            toolDetail: pending.toolDetail,
-            sessionId: pending.sessionId,
-            timestamp: pending.timestamp,
-            rawPayload: pending.rawPayload
+            toolName: body.toolName,
+            toolDetail: body.toolDetail,
+            sessionId: body.sessionId,
+            timestamp,
+            rawPayload: body.rawPayload
           });
           settingsWindow?.webContents.send("companion:permission-request", {
             id,
-            toolName: pending.toolName,
-            toolDetail: pending.toolDetail,
-            sessionId: pending.sessionId,
-            timestamp: pending.timestamp,
-            rawPayload: pending.rawPayload
+            toolName: body.toolName,
+            toolDetail: body.toolDetail,
+            sessionId: body.sessionId,
+            timestamp,
+            rawPayload: body.rawPayload
           });
 
           writeJson(res, 200, { id, status: "pending" });
@@ -556,27 +525,13 @@ function startEventServer() {
       const requestUrl = req.url ?? "";
       if (req.method === "GET" && requestUrl.startsWith("/permission/")) {
         const id = requestUrl.slice("/permission/".length);
-        const pending = pendingPermissions.get(id);
-
-        if (!pending) {
+        const found = permissionBroker.get(id);
+        if (!found) {
           writeJson(res, 404, { ok: false, error: "not_found" });
           return;
         }
-
-        if (pending.status !== "pending") {
-          writeJson(res, 200, { status: pending.status, decision: pending.decision, reason: pending.reason });
-          return;
-        }
-
-        // 长轮询：等待 resolve
         try {
-          const result = await Promise.race([
-            new Promise<PermissionPollResult>(r => {
-              const origResolve = pending.resolve;
-              pending.resolve = (result) => { origResolve(result); r(result); };
-            }),
-            new Promise<PermissionPollResult>(r => setTimeout(() => r({ status: "expired", reason: "Poll timeout" }), 120_000))
-          ]);
+          const result = await permissionBroker.wait(id);
           writeJson(res, 200, result);
         } catch {
           writeJson(res, 500, { ok: false, error: "internal_error" });
@@ -801,20 +756,12 @@ ipcMain.handle("doctor:get-report", () => {
   };
 });
 ipcMain.handle("permission:respond", async (_, response: PermissionResponse) => {
-  const pending = pendingPermissions.get(response.id);
+  const pending = permissionBroker.get(response.id);
   if (!pending || pending.status !== "pending") return { success: false };
-  clearTimeout(pending.timeout);
-  pending.status = response.decision === "allow" ? "approved" : "denied";
+  const result = permissionBroker.respond(response);
+  if (!result.ok) return { success: false };
   if (response.decision === "allow") appStats.permissionApproved++;
   else appStats.permissionDenied++;
-  pending.decision = response.decision;
-  pending.reason = response.reason ?? (response.decision === "allow" ? "Approved via Clawd" : "Denied via Clawd");
-  pending.resolve({
-    status: pending.status,
-    decision: pending.decision,
-    reason: pending.reason
-  });
-  pendingPermissions.delete(response.id);
   petWindow?.webContents.send("companion:permission-resolved", { id: response.id, status: pending.status });
   settingsWindow?.webContents.send("companion:permission-resolved", { id: response.id, status: pending.status });
   const { randomUUID } = await import("node:crypto");
@@ -1127,11 +1074,7 @@ if (!gotSingleInstanceLock) {
     wsServer?.close();
     eventServer?.close();
     stopGitWatcher();
-    pendingPermissions.forEach(p => {
-      clearTimeout(p.timeout);
-      p.resolve({ status: "expired", reason: "App quitting" });
-    });
-    pendingPermissions.clear();
+    permissionBroker.shutdown("App quitting");
   });
 }
 

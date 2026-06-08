@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Bot, Check, ChevronRight, CircleAlert, CircleCheck, CircleX, Loader2, PlugZap, Sparkles } from "lucide-react";
+import { Bot, CircleAlert, CircleCheck, CircleX, PlugZap, Sparkles } from "lucide-react";
 import { useI18n } from "../useI18n";
 
 interface ProviderStatus {
@@ -18,40 +18,27 @@ interface DoctorProviders {
   };
 }
 
-const PROVIDER_META: Record<string, { label: string; tagline: string; Icon: React.ComponentType<{ size?: number }>; accent: string }> = {
+const PROVIDER_META: Record<string, { label: string; tagline: string; Icon: React.ComponentType<{ size?: number }> }> = {
   "claude-code": {
     label: "Claude Code",
     tagline: "默认启用，跟随 Claude Code 会话",
-    Icon: Bot,
-    accent: "claude"
+    Icon: Bot
   },
   "codex": {
     label: "OpenAI Codex",
     tagline: "新增：跟踪 Codex CLI 事件",
-    Icon: Sparkles,
-    accent: "codex"
+    Icon: Sparkles
   }
 };
 
-type Tone = "good" | "wait" | "bad" | "neutral";
-
-function statusTone(status: ProviderStatus): Tone {
-  if (status.installed) return "good";
-  if (status.configExists) return "wait";
-  return "bad";
-}
-
-function statusLabel(tone: Tone, t: (k: string, def: string) => string) {
-  if (tone === "good") return t("hooks.installed", "已安装");
-  if (tone === "wait") return t("doctor.partial", "部分安装");
-  return t("hooks.notInstalled", "未安装");
-}
-
 export function SourcesPanel() {
   const { t } = useI18n();
+  const formatText = (template: string, values: Record<string, string | number>) =>
+    Object.entries(values).reduce((text, [key, value]) => text.replaceAll(`{${key}}`, String(value)), template);
+
   const [providers, setProviders] = useState<DoctorProviders | null>(null);
-  const [action, setAction] = useState<{ id: string; verb: "installing" | "repairing" | "removing" } | null>(null);
-  const [result, setResult] = useState<{ id: string; ok: boolean; message: string } | null>(null);
+  const [action, setAction] = useState<{ id: string; verb: string } | null>(null);
+  const [result, setResult] = useState<{ id: string; message: string } | null>(null);
 
   useEffect(() => {
     window.companion.getDoctorReport().then((report) => {
@@ -59,13 +46,8 @@ export function SourcesPanel() {
     });
   }, []);
 
-  async function refreshReport() {
-    const report = await window.companion.getDoctorReport();
-    setProviders(report.providers ?? null);
-  }
-
   async function handle(id: "claude-code" | "codex", verb: "install" | "repair" | "remove") {
-    setAction({ id, verb: `${verb}ing` as "installing" });
+    setAction({ id, verb });
     setResult(null);
     let res: { success: boolean; error?: string; fixed?: string[] };
     if (verb === "install") res = await window.companion.installHooks(id);
@@ -74,18 +56,15 @@ export function SourcesPanel() {
 
     if (res.success) {
       const meta = PROVIDER_META[id];
-      if (verb === "install") {
-        setResult({ id, ok: true, message: t("doctor.installDone", "安装成功！重启会话后生效。") + (meta ? `（${meta.label}）` : "") });
-      } else if (verb === "repair") {
-        const count = res.fixed?.length ?? 0;
-        setResult({ id, ok: true, message: t("doctor.repairDone", "修复完成，修复了 {count} 项配置。").replace("{count}", String(count)) });
-      } else {
-        setResult({ id, ok: true, message: t("doctor.removeDone", "已移除所有 Clawd hooks。") + (meta ? `（${meta.label}）` : "") });
-      }
+      const suffix = meta ? `（${meta.label}）` : "";
+      if (verb === "install") setResult({ id, message: t("doctor.installDone", "安装成功！重启会话后生效。") + suffix });
+      else if (verb === "repair") setResult({ id, message: formatText(t("doctor.repairDone", "修复完成，修复了 {count} 项配置。"), { count: res.fixed?.length ?? 0 }) });
+      else setResult({ id, message: t("doctor.removeDone", "已移除所有 Clawd hooks。") + suffix });
     } else {
-      setResult({ id, ok: false, message: `${t("common.failed", "失败：")}${res.error ?? ""}` });
+      setResult({ id, message: formatText(t("doctor.installFailed", "安装失败: {error}"), { error: res.error ?? "" }) });
     }
-    await refreshReport();
+    const report = await window.companion.getDoctorReport();
+    setProviders(report.providers ?? null);
     setAction(null);
   }
 
@@ -100,104 +79,68 @@ export function SourcesPanel() {
 
   return (
     <div className="sources-panel">
-      <div className="sources-grid">
-        {ids.map((id) => {
-          const info = providers[id];
-          const meta = PROVIDER_META[id] ?? { label: id, tagline: "", Icon: PlugZap, accent: "neutral" };
-          const status = info.hooks;
-          const tone = statusTone(status);
-          const isBusy = action?.id === id;
-          const busyVerb = isBusy ? action!.verb : null;
-          return (
-            <article key={id} className={`source-card accent-${meta.accent}`} data-tone={tone}>
-              <header className="source-card-header">
-                <div className="source-card-id">
-                  <span className="source-card-icon"><meta.Icon size={20} /></span>
-                  <div>
-                    <h4>{meta.label}</h4>
-                    <small className="note">{meta.tagline}</small>
-                  </div>
-                </div>
-                <span className={`status-pill ${tone}`}>
-                  {tone === "good" ? <CircleCheck size={12} /> : tone === "wait" ? <CircleAlert size={12} /> : <CircleX size={12} />}
-                  {statusLabel(tone, t)}
-                </span>
-              </header>
+      {ids.map((id) => {
+        const info = providers[id];
+        const meta = PROVIDER_META[id] ?? { label: id, tagline: "", Icon: PlugZap };
+        const status = info.hooks;
+        const tone: "good" | "wait" | "bad" = status.installed ? "good" : status.configExists ? "wait" : "bad";
+        const isBusy = action?.id === id;
+        return (
+          <div key={id} className="source-card">
+            <StatusCard
+              icon={<meta.Icon size={18} />}
+              label={formatText(t("doctor.statusLabel", "{provider} 状态"), { provider: meta.label })}
+              value={
+                status.installed
+                  ? formatText(t("hooks.installedToProvider", "已安装到 {provider}"), { provider: meta.label })
+                  : status.configExists
+                  ? t("doctor.partial", "部分安装")
+                  : t("hooks.notInstalled", "未安装")
+              }
+              tone={tone}
+            />
 
-              <dl className="source-card-meta">
-                <div>
-                  <dt>{t("doctor.hookEvents", "事件订阅")}</dt>
-                  <dd>
-                    <strong>{status.hookCount}</strong> <span className="muted">/ {status.requiredCount}</span>
-                    <ProgressBar value={status.hookCount} max={status.requiredCount} tone={tone} />
-                  </dd>
-                </div>
-                <div>
-                  <dt>{t("doctor.configFile", "配置文件")}</dt>
-                  <dd className={info.forwarder.exists ? "ok" : "bad"}>
-                    {info.forwarder.exists
-                      ? <><CircleCheck size={13} /> {t("doctor.exists", "已找到")}</>
-                      : <><CircleX size={13} /> {t("doctor.missingFile", "未找到")} <code className="path">{info.forwarder.expectedPath}</code></>}
-                  </dd>
-                </div>
-              </dl>
-
+            <div className="hooks-detail">
+              <span>{formatText(t("doctor.configuredCount", "已配置 {count} / {total} 个事件"), { count: status.hookCount, total: status.requiredCount })}</span>
               {status.missingEvents.length > 0 && (
-                <details className="source-card-missing" open={tone === "wait"}>
-                  <summary>
-                    <ChevronRight size={12} /> {t("doctor.missingEvents", "缺少事件")} ({status.missingEvents.length})
-                  </summary>
-                  <ul>
-                    {status.missingEvents.map((eventName) => <li key={eventName}><code>{eventName}</code></li>)}
-                  </ul>
-                </details>
+                <span className="hooks-missing">
+                  {formatText(t("doctor.missingPrefix", "缺少: {events}"), { events: status.missingEvents.join(", ") })}
+                </span>
               )}
-
-              <footer className="source-card-actions">
-                <button
-                  className="primary"
-                  onClick={() => handle(id as "claude-code" | "codex", "install")}
-                  disabled={!!action}
-                >
-                  {busyVerb === "installing" && <Loader2 size={14} className="spin" />}
-                  {t("doctor.oneClickInstall", "一键安装")}
-                </button>
-                <button
-                  onClick={() => handle(id as "claude-code" | "codex", "repair")}
-                  disabled={!!action}
-                >
-                  {busyVerb === "repairing" && <Loader2 size={14} className="spin" />}
-                  {t("doctor.repairConfig", "修复配置")}
-                </button>
-                <button
-                  className="danger"
-                  onClick={() => handle(id as "claude-code" | "codex", "remove")}
-                  disabled={!!action}
-                >
-                  {busyVerb === "removing" && <Loader2 size={14} className="spin" />}
-                  {t("doctor.removeHooks", "移除 Hooks")}
-                </button>
-              </footer>
-
-              {result && result.id === id && (
-                <p className={`source-card-result ${result.ok ? "ok" : "bad"}`}>
-                  {result.ok ? <CircleCheck size={14} /> : <CircleAlert size={14} />}
-                  {result.message}
-                </p>
+              {!status.commandMatches && status.configExists && (
+                <span className="hooks-mismatch">{t("doctor.mismatchHint", "命令路径不匹配，建议修复")}</span>
               )}
-            </article>
-          );
-        })}
-      </div>
+              {!info.forwarder.exists && (
+                <span className="hooks-mismatch">{t("doctor.forwarderMissing", "Forwarder 文件未找到")}</span>
+              )}
+            </div>
+
+            <div className="hooks-actions">
+              <button onClick={() => handle(id as "claude-code" | "codex", "install")} disabled={!!action}>
+                {isBusy && action!.verb === "installing" ? t("doctor.installing", "安装中...") : t("doctor.oneClickInstall", "一键安装")}
+              </button>
+              <button onClick={() => handle(id as "claude-code" | "codex", "repair")} disabled={!!action}>
+                {isBusy && action!.verb === "repairing" ? t("doctor.repairing", "修复中...") : t("doctor.repairConfig", "修复配置")}
+              </button>
+              <button className="danger" onClick={() => handle(id as "claude-code" | "codex", "remove")} disabled={!!action}>
+                {isBusy && action!.verb === "removing" ? t("doctor.removing", "移除中...") : t("doctor.removeHooks", "移除 Hooks")}
+              </button>
+            </div>
+
+            {result && result.id === id && <p className="hooks-result">{result.message}</p>}
+          </div>
+        );
+      })}
     </div>
   );
 }
 
-function ProgressBar({ value, max, tone }: { value: number; max: number; tone: Tone }) {
-  const pct = max > 0 ? Math.max(0, Math.min(100, Math.round((value / max) * 100))) : 0;
+function StatusCard({ icon, label, value, tone }: { icon: React.ReactNode; label: string; value: string; tone: "good" | "bad" | "wait" | "neutral" }) {
   return (
-    <div className={`source-progress ${tone}`} role="progressbar" aria-valuemin={0} aria-valuemax={max} aria-valuenow={value}>
-      <span style={{ width: `${pct}%` }} />
-    </div>
+    <article className={`status-card ${tone}`}>
+      {icon}
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </article>
   );
 }
