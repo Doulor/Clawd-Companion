@@ -258,8 +258,15 @@ describe("titleForTool", () => {
 });
 
 describe("isPermissionEvent", () => {
-  it("returns true for PreToolUse without bypass mode", () => {
-    expect(isPermissionEvent({ hook_event_name: "PreToolUse" })).toBe(true);
+  it("returns false when permission_mode is missing (sub-agent scenario)", () => {
+    expect(isPermissionEvent({ hook_event_name: "PreToolUse" })).toBe(false);
+  });
+
+  it("returns true for PreToolUse with explicit non-skip permission_mode", () => {
+    expect(isPermissionEvent({
+      hook_event_name: "PreToolUse",
+      permission_mode: "default"
+    })).toBe(true);
   });
 
   it("returns false for non-PreToolUse hooks", () => {

@@ -284,8 +284,10 @@ export function postEvent(event: CompanionEvent): Promise<void> {
 export function isPermissionEvent(payload: HookPayload): boolean {
   const hook = hookName(payload);
   if (hook !== "PreToolUse") return false;
+  // permission_mode 字段缺失时（子 agent 派发场景），不介入权限流程
+  const permMode = text(payload.permission_mode) ?? text(payload.permissionMode);
+  if (permMode === undefined) return false;
   // 权限已跳过时不介入：bypassPermissions / dontAsk / auto 模式下 Claude Code 不需要外部确认
-  const permMode = text(payload.permission_mode) ?? text(payload.permissionMode) ?? "";
   if (permMode === "bypassPermissions" || permMode === "dontAsk" || permMode === "auto") return false;
   return true;
 }

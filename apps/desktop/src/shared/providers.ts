@@ -222,7 +222,9 @@ export const claudeCodeProvider: Provider = {
   },
   isPermissionEvent(payload) {
     if (claudeHookName(payload) !== "PreToolUse") return false;
-    const permMode = text(payload.permission_mode) ?? text(payload.permissionMode) ?? "";
+    // permission_mode 字段缺失时（子 agent 派发场景），不介入权限流程
+    const permMode = text(payload.permission_mode) ?? text(payload.permissionMode);
+    if (permMode === undefined) return false;
     if (permMode === "bypassPermissions" || permMode === "dontAsk" || permMode === "auto") return false;
     return true;
   },

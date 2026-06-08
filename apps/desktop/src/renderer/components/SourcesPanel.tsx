@@ -91,7 +91,7 @@ export function SourcesPanel() {
               icon={<meta.Icon size={18} />}
               label={
                 id === "codex"
-                  ? <><span>{formatText(t("doctor.statusLabel", "{provider} 状态"), { provider: meta.label })}</span><sup className="beta-badge">{t("behavior.testing", "测试中")}</sup></>
+                  ? <>{formatText(t("doctor.statusLabel", "{provider} 状态"), { provider: meta.label })}<sup className="beta-badge">{t("behavior.testing", "测试中")}</sup></>
                   : formatText(t("doctor.statusLabel", "{provider} 状态"), { provider: meta.label })
               }
               value={

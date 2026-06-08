@@ -39,6 +39,10 @@ describe("claudeCodeProvider.normalize", () => {
     expect(claudeCodeProvider.isPermissionEvent({ hook_event_name: "PreToolUse", permission_mode: "default" })).toBe(true);
   });
 
+  it("skips permission flow when permission_mode is missing (sub-agent scenario)", () => {
+    expect(claudeCodeProvider.isPermissionEvent({ hook_event_name: "PreToolUse" })).toBe(false);
+  });
+
   it("formats permission decisions in Claude's wire format", () => {
     const stdout = claudeCodeProvider.formatPermissionDecision("allow", "user said yes");
     expect(JSON.parse(stdout)).toEqual({
