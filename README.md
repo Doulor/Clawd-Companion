@@ -38,8 +38,6 @@
 - [安装](#安装)
 - [使用](#使用)
 - [开发](#开发)
-- [版本与发布](#版本与发布)
-- [技术栈](#技术栈)
 - [贡献](#贡献)
 - [License](#license)
 - [Star History](#star-history)
@@ -55,6 +53,7 @@
 - 🎬 **动作动画映射**：为每个工具/事件自定义 Clawd 精灵动画。
 - 📊 **运行统计**：工具调用排行、会话数、权限统计、活跃时段等深度数据持久化。
 - 💾 **配置导入/导出**：一键导出或导入 JSON 配置。
+
 
 ### 完成与错误提醒
 
@@ -87,12 +86,6 @@
 - 主程序已运行 → 复用现有实例。
 - 主程序未运行 → 开发模式 `npm start`，生产模式启动安装目录下的 exe。
 
-环境变量覆盖（高级用户）：
-
-```bash
-CLAWD_COMPANION_AUTOSTART=1   # 强制开启
-CLAWD_COMPANION_AUTOSTART=0   # 强制关闭
-```
 
 ## 安装
 
@@ -103,6 +96,7 @@ CLAWD_COMPANION_AUTOSTART=0   # 强制关闭
 5. 重新打开 Claude Code 会话，即可看到 Clawd 实时响应。
 
 > 需要 Windows 10 / 11，Node.js 22+ 仅在开发模式需要。
+
 
 ## 使用
 
@@ -167,40 +161,17 @@ npm run downloads
 └── CLAUDE.md                   # 项目级 Claude Code 指引
 ```
 
-## 版本与发布
-
-```bash
-npm run version:patch   # 递增 patch（1.5.2 → 1.5.3）
-npm run version:minor   # 递增 minor（1.5.2 → 1.6.0）
-npm run version:major   # 递增 major（1.5.2 → 2.0.0)
-```
-
-发布流程见 [`CLAUDE.md`](./CLAUDE.md)：
-
-- 推送 `v*.*.*` tag → CI 自动构建、产物重命名、发布到 GitHub Releases。
-- 手动发布：`npm run dist`，再 `gh release create`。
 
 ## 多 CLI 支持
 
-从 v1.6 开始，Clawd Companion 通过统一的 `Provider` 抽象同时跟踪多个 AI 编程 CLI：
+从 v1.5.3 开始，Clawd Companion 通过统一的 `Provider` 抽象同时跟踪多个 AI 编程 CLI：
 
 - **Claude Code**（默认）：通过 `~/.claude/settings.json` 注册 hook，监听 `SessionStart` / `UserPromptSubmit` / `PreToolUse` / `PostToolUse` / `Notification` / `Stop`。
 - **OpenAI Codex**（新增）：通过 `~/.codex/config.toml`（TOML）注册 hook，监听 `SessionStart` / `UserPromptSubmit` / `PreToolUse` / `PostToolUse` / `PermissionRequest` / `Stop`。
 
 在「设置 → 数据源」可同时管理两个 CLI 的 hook 状态。新增其他 CLI（如 Aider / Continue 等）只需要再实现一个 `Provider` 接口即可。架构说明见 [`CLAUDE.md`](./CLAUDE.md) 的 *多 CLI 架构* 一节。
 
-## 技术栈
 
-- Electron + React + TypeScript + Vite
-- `electron-updater` 自动更新（GitHub Releases）
-- 本地 HTTP + WebSocket 事件服务
-- Claude Code hooks 转发器（Node.js CLI，44 项单元测试）
-- `electron-builder` NSIS 安装包
-
-## 持续集成
-
-- **CI**（`.github/workflows/ci.yml`）：push / PR 自动运行 typecheck + 单元测试
-- **Release**（`.github/workflows/release.yml`）：推送 `v*.*.*` tag 自动构建、产物重命名、发布到 GitHub Releases
 
 ## 贡献
 
