@@ -373,6 +373,7 @@ export interface CustomPlugin {
   manifestError?: string;
   settings?: Record<string, unknown>;
   resolvedAssets?: { spritesCss?: string };
+  resolvedDataDir?: string;
   marketId?: string;
   version?: string;
   author?: string;

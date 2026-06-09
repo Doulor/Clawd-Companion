@@ -1,6 +1,6 @@
 {
   "name": "clawd-companion",
-  "version": "1.5.7",
+  "version": "1.5.8",
   "private": true,
   "description": "Clawd Companion - Real-time Claude Code desktop companion showing tool calls and session status",
   "license": "MIT",

@@ -94,6 +94,14 @@ export function PluginDetailPage({ plugin, marketItem, runs, installing, onBack,
             </section>
           ) : null}
 
+          {plugin?.resolvedDataDir ? (
+            <section className="plugin-detail-section compact">
+              <h3>{zh ? "数据目录" : "Data directory"}</h3>
+              <p className="plugin-data-dir-path">{plugin.resolvedDataDir}</p>
+              <button className="ghost-btn" onClick={() => void window.companion.openPluginDataDir(plugin.id)}>{zh ? "在文件管理器中打开" : "Open in explorer"}</button>
+            </section>
+          ) : null}
+
           {plugin && widgets.length ? (
             <section className="plugin-detail-section compact">
               <h3>{zh ? "组件" : "Widgets"}</h3>

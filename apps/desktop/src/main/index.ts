@@ -1061,6 +1061,7 @@ async function fetchMarketIndex(): Promise<PluginMarketIndex> {
 ipcMain.handle("plugins:get", () => (settings.customPlugins ?? []).map(p => {
   const normalized = normalizePlugin(p);
   normalized.resolvedAssets = resolvePluginAssets(normalized);
+  normalized.resolvedDataDir = join(pluginDataDir, normalized.id);
   return normalized;
 }));
 ipcMain.handle("plugins:get-runs", () => pluginRuns);
@@ -1074,6 +1075,12 @@ ipcMain.handle("plugins:run-now", (_, pluginId: string) => {
     pluginRuns = appendPluginRun(pluginRuns, record);
     settingsWindow?.webContents.send("companion:plugin-run", record);
   }, pluginDataDir);
+  return { ok: true };
+});
+ipcMain.handle("plugins:open-data-dir", (_, pluginId: string) => {
+  const dir = join(pluginDataDir, pluginId);
+  if (!existsSync(dir)) { mkdirSync(dir, { recursive: true }); }
+  shell.openPath(dir);
   return { ok: true };
 });
 ipcMain.handle("plugins:save", (_, plugins: CustomPlugin[]) => {

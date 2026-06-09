@@ -77,6 +77,7 @@ const companionApi = {
   getPlugins: () => ipcRenderer.invoke("plugins:get") as Promise<import("../shared/events.js").CustomPlugin[]>,
   getPluginRuns: () => ipcRenderer.invoke("plugins:get-runs") as Promise<PluginRunRecord[]>,
   runPluginNow: (pluginId: string) => ipcRenderer.invoke("plugins:run-now", pluginId) as Promise<{ ok: boolean; error?: string }>,
+  openPluginDataDir: (pluginId: string) => ipcRenderer.invoke("plugins:open-data-dir", pluginId) as Promise<{ ok: boolean }>,
   getPluginMarket: () => ipcRenderer.invoke("plugins:market-get") as Promise<PluginMarketIndex>,
   installMarketPlugin: (pluginId: string) => ipcRenderer.invoke("plugins:market-install", pluginId) as Promise<{ ok: boolean; plugin?: import("../shared/events.js").CustomPlugin; error?: string }>,
   savePlugins: (plugins: import("../shared/events.js").CustomPlugin[]) => ipcRenderer.invoke("plugins:save", plugins) as Promise<import("../shared/events.js").CustomPlugin[]>,
