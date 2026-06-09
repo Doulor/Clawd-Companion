@@ -81,6 +81,30 @@
         "discord",
         "slack"
       ]
+    },
+    {
+      "id": "daily-report",
+      "name": "Daily Report",
+      "nameZh": "每日编码报告",
+      "description": "Generate a beautiful HTML daily report of your Claude Code sessions.",
+      "descriptionZh": "为你的 Claude Code 会话生成精美的 HTML 每日编码报告。",
+      "readme": "# Daily Report\n\nGenerate a beautiful HTML daily report of your Claude Code sessions.\n\n## How to use\n\n1. Install, trust, and enable the plugin.\n2. Configure the **Report time** — the plugin checks on each task completion whether it's time to generate.\n3. Configure the **Output directory** — where to save the HTML report files.\n4. After the configured time, complete a task and the report will be generated automatically.\n\n## What's in the report\n\n- Session overview: total sessions, duration, tool calls, errors\n- Tool usage distribution (bar chart)\n- Event timeline (color-coded)\n- Success/error ratio (donut chart)\n- Token usage breakdown\n\n## Privacy\n\nThe report is generated locally and never sent anywhere. It contains only event metadata, not code content.",
+      "readmeZh": "# 每日编码报告\n\n为你的 Claude Code 会话生成精美的 HTML 每日编码报告。\n\n## 如何使用\n\n1. 安装、信任并启用插件。\n2. 配置 **报告时间** — 插件会在每次任务完成时检查是否到了生成报告的时间。\n3. 配置 **输出目录** — HTML 报告文件的保存位置。\n4. 到达配置的时间后，完成一个任务即可自动生成报告。\n\n## 报告内容\n\n- 会话概览：总会话数、总时长、工具调用次数、错误次数\n- 工具使用分布（条形图）\n- 事件时间线（彩色标记）\n- 成功/错误比例（环形图）\n- Token 用量明细\n\n## 隐私\n\n报告完全在本地生成，不会发送到任何地方。只包含事件元数据，不包含代码内容。",
+      "author": "Clawd",
+      "version": "1.0.0",
+      "entry": "plugins/daily-report/index.js",
+      "manifest": "plugins/daily-report/index.manifest.json",
+      "events": [
+        "done"
+      ],
+      "permissions": [
+        "filesystem"
+      ],
+      "tags": [
+        "report",
+        "statistics",
+        "daily"
+      ]
     }
   ]
 }
