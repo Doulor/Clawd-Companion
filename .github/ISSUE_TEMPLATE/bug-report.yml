@@ -1,0 +1,68 @@
+name: Bug 报告
+description: 报告一个 bug 或异常行为
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: 问题描述
+      description: 清晰地描述你遇到了什么问题
+      placeholder: 例如：点击番茄钟开始按钮后，倒计时没有启动...
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      description: 逐步描述如何复现这个问题
+      placeholder: |
+        1. 打开设置面板
+        2. 进入插件页
+        3. 点击番茄钟的「开始」按钮
+        4. 观察到...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望行为
+      description: 你期望发生什么？
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际行为
+      description: 实际发生了什么？
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: 版本
+      description: 你使用的 Clawd Companion 版本号
+      placeholder: 例如：1.5.5
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: 操作系统
+      options:
+        - Windows 11
+        - Windows 10
+        - macOS
+        - Linux
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: 日志/错误信息
+      description: 如果有控制台日志或错误信息，请粘贴在这里
+      render: shell
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: 截图
+      description: 如果有相关的截图，请上传

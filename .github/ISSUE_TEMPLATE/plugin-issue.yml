@@ -1,0 +1,51 @@
+name: 插件问题
+description: 插件安装、运行或配置相关的问题
+labels: ["plugin"]
+body:
+  - type: input
+    id: plugin
+    attributes:
+      label: 插件名称
+      description: 出问题的插件名称
+      placeholder: 例如：Pomodoro、Daily Report、Session Logger
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: 问题描述
+      description: 描述你遇到的问题
+      placeholder: 例如：安装 Daily Report 后点击「立即运行」没有生成报告...
+    validations:
+      required: true
+  - type: dropdown
+    id: category
+    attributes:
+      label: 问题类型
+      options:
+        - 安装失败
+        - 运行报错
+        - 设置不生效
+        - UI 显示异常
+        - 功能请求
+        - 其他
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: 运行记录
+      description: 在插件详情页的「最近运行」中查看并粘贴日志
+      render: shell
+  - type: input
+    id: version
+    attributes:
+      label: Clawd Companion 版本
+      placeholder: 例如：1.5.5
+    validations:
+      required: true
+  - type: input
+    id: plugin-version
+    attributes:
+      label: 插件版本
+      placeholder: 例如：1.0.0
