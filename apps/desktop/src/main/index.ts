@@ -232,7 +232,7 @@ function saveSettings(next: Partial<CompanionSettings>) {
   app.setLoginItemSettings({ openAtLogin: settings.launchAtLogin, path: process.execPath });
   syncAutoStartMarker(settings.autoStartWithCli);
   syncConnectionConfig();
-  if (next.hooksGuardEnabled !== undefined) startHooksGuard();
+  if (next.hooksGuardEnabled !== undefined || next.hooksGuardIntervalMs !== undefined) startHooksGuard();
   if (petWindow && (settings.viewScale ?? settings.petScale) !== previousViewScale) {
     const size = petWindowSize();
     petWindow.setSize(size.width, size.height);
@@ -779,6 +779,7 @@ function backupPathFor(provider: Provider): string {
 }
 
 let hooksGuardTimer: ReturnType<typeof setInterval> | null = null;
+let hooksGuardStartTimer: ReturnType<typeof setTimeout> | null = null;
 
 function runHooksGuardCheck() {
   if (!settings.hooksGuardEnabled) return;
@@ -802,10 +803,13 @@ function runHooksGuardCheck() {
 
 function startHooksGuard() {
   if (hooksGuardTimer) clearInterval(hooksGuardTimer);
+  if (hooksGuardStartTimer) clearTimeout(hooksGuardStartTimer);
+  hooksGuardTimer = null;
+  hooksGuardStartTimer = null;
   if (!settings.hooksGuardEnabled) return;
   const interval = Math.max(5_000, Math.min(60_000, settings.hooksGuardIntervalMs ?? 30_000));
-  // First check after 10s (let app fully start), then at configured interval
-  setTimeout(() => {
+  hooksGuardStartTimer = setTimeout(() => {
+    hooksGuardStartTimer = null;
     runHooksGuardCheck();
     hooksGuardTimer = setInterval(runHooksGuardCheck, interval);
   }, 10_000);
@@ -813,6 +817,7 @@ function startHooksGuard() {
 
 function stopHooksGuard() {
   if (hooksGuardTimer) { clearInterval(hooksGuardTimer); hooksGuardTimer = null; }
+  if (hooksGuardStartTimer) { clearTimeout(hooksGuardStartTimer); hooksGuardStartTimer = null; }
 }
 
 ipcMain.handle("settings:get", () => settings);
