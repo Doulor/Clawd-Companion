@@ -162,6 +162,7 @@ export interface CompanionSettings {
   autoStartWithCli: boolean;
   autoUpdateEnabled: boolean;
   hooksGuardEnabled: boolean;
+  hooksGuardIntervalMs: number;
   enabledSources: ProviderId[];
   doneSound: boolean;
   notificationsEnabled: boolean;
@@ -532,6 +533,7 @@ export const defaultSettings: CompanionSettings = {
   autoStartWithCli: false,
   autoUpdateEnabled: true,
   hooksGuardEnabled: true,
+  hooksGuardIntervalMs: 30000,
   enabledSources: ["claude-code"],
   doneSound: false,
   notificationsEnabled: true,

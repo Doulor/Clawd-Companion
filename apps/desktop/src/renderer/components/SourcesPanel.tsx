@@ -41,10 +41,12 @@ export function SourcesPanel() {
   const [action, setAction] = useState<{ id: string; verb: string } | null>(null);
   const [result, setResult] = useState<{ id: string; message: string } | null>(null);
   const [guardEnabled, setGuardEnabled] = useState(true);
+  const [guardInterval, setGuardInterval] = useState(30);
 
   useEffect(() => {
     window.companion.getSettings().then((s) => {
       setGuardEnabled(s.hooksGuardEnabled !== false);
+      setGuardInterval(Math.round((s.hooksGuardIntervalMs ?? 30000) / 1000));
       setProviders(null);
     });
     window.companion.getDoctorReport().then((report) => {
@@ -91,9 +93,20 @@ export function SourcesPanel() {
           <span>{t("hooks.guardLabel", "配置守护")}</span>
           <small className="note">{t("hooks.guardDesc", "检测到 hooks 配置丢失时自动修复（如 ccs 切换模型覆盖了 settings.json）")}</small>
         </div>
-        <Toggle label="" checked={guardEnabled} onChange={(v) => { setGuardEnabled(v); window.companion.saveSettings({ hooksGuardEnabled: v }); }} />
+        <div className="hooks-guard-controls">
+          <div className="hooks-guard-slider-row">
+            <label>{t("hooks.guardInterval", "检测间隔")}</label>
+            <input type="range" min={5} max={60} step={1} value={guardInterval} disabled={!guardEnabled} onChange={(e) => {
+              const v = Number(e.target.value);
+              setGuardInterval(v);
+              window.companion.saveSettings({ hooksGuardIntervalMs: v * 1000 });
+            }} />
+            <span className="hooks-guard-slider-value">{guardInterval}s</span>
+          </div>
+          <Toggle label="" checked={guardEnabled} onChange={(v) => { setGuardEnabled(v); window.companion.saveSettings({ hooksGuardEnabled: v }); }} />
+        </div>
       </div>
-      <p className="note sources-note">{t("doctor.backupNote", "安装 hooks 后，CLI 会自动将事件发送到 Clawd Companion。备份文件保存在 ~/.claude/settings.clawd-backup.json")}</p>
+      <p className="note sources-note sources-note-span">{t("doctor.backupNote", "安装 hooks 后，CLI 会自动将事件发送到 Clawd Companion。备份文件保存在 ~/.claude/settings.clawd-backup.json")}</p>
       {ids.map((id) => {
         const info = providers[id];
         const meta = PROVIDER_META[id] ?? { label: id, tagline: "", Icon: PlugZap };

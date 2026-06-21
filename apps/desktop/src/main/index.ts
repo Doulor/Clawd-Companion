@@ -803,11 +803,12 @@ function runHooksGuardCheck() {
 function startHooksGuard() {
   if (hooksGuardTimer) clearInterval(hooksGuardTimer);
   if (!settings.hooksGuardEnabled) return;
-  // First check after 15s (let app fully start), then every 60s
+  const interval = Math.max(5_000, Math.min(60_000, settings.hooksGuardIntervalMs ?? 30_000));
+  // First check after 10s (let app fully start), then at configured interval
   setTimeout(() => {
     runHooksGuardCheck();
-    hooksGuardTimer = setInterval(runHooksGuardCheck, 60_000);
-  }, 15_000);
+    hooksGuardTimer = setInterval(runHooksGuardCheck, interval);
+  }, 10_000);
 }
 
 function stopHooksGuard() {
